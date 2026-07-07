@@ -2672,37 +2672,69 @@ LOCK: <exhaustive visual description for exact replication: shape, proportions, 
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
-	    setIsGenerating(true);
-	    setStatusMessage("Generating visual board & storyboard sheet using Nano Banana Pro 2...");
+    setIsGenerating(true);
+    setStatusMessage("Generating visual board & storyboard sheet using Nano Banana Pro 2...");
 
-	    try {
-	      const baseReferenceImages = resetDerived ? pbImages.filter(im => !im._autoExtracted) : pbImages;
-	      if (resetDerived) {
-	        setStoryboardImage(null);
-	        setCharacterSheetImage(null);
-	        setPbImages(baseReferenceImages);
-	        pbSaveSession(activeSessionId, sessionName, chatHistory, pbFormat, videoModel, pbClips, baseReferenceImages, null, musicPrompt, voiceSignature, null);
-	      }
-	      const parts = [];
-	      for (const img of baseReferenceImages) {
-	        const base64 = pbGetImageBase64(img);
-	        const mimeType = pbGetImageMimeType(img);
-	        parts.push({ inlineData: { mimeType, data: base64 } });
-	      }
-
-	      const hasLockedProductRef = baseReferenceImages.some(img => img._isProduct || img._productLock);
-	      const productStoryboardDirective = hasLockedProductRef
-	        ? `\nLOCKED PRODUCT REFERENCE — ABSOLUTE: the user's original uploaded product image is the ONLY authority for package design. ${PB_PRODUCT_EXACT_LOCK} In storyboard panels, do NOT invent alternate product labels, do NOT redraw different packaging, and do NOT create fake variant layouts. If exact package artwork cannot be reproduced in the storyboard sheet, show the product small/partially occluded or as a plain placeholder composition cue; the final video will use the original product reference directly.`
-	        : "";
-	      const styleDirective = baseReferenceImages.length > 0
-	        ? `MANDATORY VISUAL STYLE — ANALYZE THE ATTACHED REFERENCE IMAGES DEEPLY: The user has uploaded reference artwork/images. You MUST study them carefully and replicate their EXACT visual style in every storyboard panel. Specifically analyze and match: (1) the art MEDIUM (oil painting, watercolor, digital art, photography, anime, etc.), (2) BRUSHWORK and texture quality (visible brushstrokes, canvas texture, smooth digital rendering, film grain, etc.), (3) COLOR PALETTE (exact hues, saturation levels, warm/cool tones, color harmony), (4) LIGHTING style (golden hour, dramatic chiaroscuro, soft diffused, etc.), (5) RENDERING approach (painterly, photorealistic, stylized, flat, etc.), (6) COMPOSITION and framing conventions. Do NOT default to photorealism or cinematic film style unless the reference images are themselves photorealistic. If the references are oil paintings, every panel must look like an oil painting. If they are watercolors, every panel must look like watercolor. MATCH THE REFERENCES EXACTLY. ${PB_PRODUCT_EXACT_LOCK} ${PB_LOGO_INTEGRITY}${productStoryboardDirective}`
-	        : `MANDATORY VISUAL STYLE: Match the specific visual style, art medium, rendering style, lighting, and environment requested in the script and shown in the reference images. If the references or script specify a 2D illustrated, hand-drawn, or painterly style, you MUST render the panels in that exact medium with zero drift. Maintain visual consistency across all panels.`;
-      
+    try {
+      const baseReferenceImages = resetDerived ? pbImages.filter(im => !im._autoExtracted) : pbImages;
+      if (resetDerived) {
+        setStoryboardImage(null);
+        setCharacterSheetImage(null);
+        setPbImages(baseReferenceImages);
+        pbSaveSession(activeSessionId, sessionName, chatHistory, pbFormat, videoModel, pbClips, baseReferenceImages, null, musicPrompt, voiceSignature, null);
+      }
 
       const sanitizedScript = lastModelMsg;
-
-      // Strip character surnames and age markers to prevent safety block in image generation model
       const cleanStoryboardScript = pbStripCharacterSurnames(sanitizedScript);
+
+      // === FIDELITY PIPELINE Component 1: Smart selection ===
+      let sortedReferences = [...baseReferenceImages];
+      if (sortedReferences.length > 1) {
+        try {
+          setStatusMessage("Analyzing references...");
+          const rawBase64s = sortedReferences.map(pbGetImageBase64);
+          const sortedUrls = await selectBestSubjectImages("", cleanStoryboardScript, rawBase64s);
+          sortedReferences = sortedUrls.map(url => sortedReferences.find(x => pbGetImageBase64(x) === (url.split(',')[1] || url))).filter(Boolean);
+        } catch (e) {
+          console.warn("Fidelity reorder failed:", e);
+        }
+      }
+
+      // === FIDELITY PIPELINE Component 2: Multi-View Identity Profile ===
+      let subjectProfileText = "";
+      if (sortedReferences.length > 1) {
+        try {
+          setStatusMessage("Extracting identity profile...");
+          const rawBase64s = sortedReferences.map(pbGetImageBase64);
+          subjectProfileText = await extractMultiViewReferencePrompt("", rawBase64s);
+        } catch (e) {
+          console.warn("Fidelity profile failed:", e);
+        }
+      }
+      if (!subjectProfileText) {
+        subjectProfileText = sortedReferences.map(x => x._productLock || x._identityLock).filter(Boolean).join(" ");
+      }
+
+      // === FIDELITY PIPELINE Component 3: Build Contact Sheet ===
+      let contactSheetB64 = null;
+      if (sortedReferences.length > 1) {
+        try {
+          setStatusMessage("Building reference contact sheet...");
+          const rawBase64s = sortedReferences.map(pbGetImageBase64);
+          const sheetUrl = await buildReferenceContactSheet(rawBase64s, "SUBJECT REFERENCE PACK");
+          if (sheetUrl) contactSheetB64 = sheetUrl.split(",")[1] || sheetUrl;
+        } catch (e) {
+          console.warn("Fidelity contact sheet failed:", e);
+        }
+      }
+
+      const hasLockedProductRef = sortedReferences.some(img => img._isProduct || img._productLock);
+      const productStoryboardDirective = hasLockedProductRef
+        ? `\nLOCKED PRODUCT REFERENCE — ABSOLUTE: the user's original uploaded product image is the ONLY authority for package design. ${PB_PRODUCT_EXACT_LOCK} In storyboard panels, do NOT invent alternate product labels, do NOT redraw different packaging, and do NOT create fake variant layouts. If exact package artwork cannot be reproduced in the storyboard sheet, show the product small/partially occluded or as a plain placeholder composition cue; the final video will use the original product reference directly.`
+        : "";
+      const styleDirective = sortedReferences.length > 0
+        ? `MANDATORY VISUAL STYLE — ANALYZE THE ATTACHED REFERENCE IMAGES DEEPLY: The user has uploaded reference artwork/images. You MUST study them carefully and replicate their EXACT visual style in every storyboard panel. Specifically analyze and match: (1) the art MEDIUM (oil painting, watercolor, digital art, photography, anime, etc.), (2) BRUSHWORK and texture quality (visible brushstrokes, canvas texture, smooth digital rendering, film grain, etc.), (3) COLOR PALETTE (exact hues, saturation levels, warm/cool tones, color harmony), (4) LIGHTING style (golden hour, dramatic chiaroscuro, soft diffused, etc.), (5) RENDERING approach (painterly, photorealistic, stylized, flat, etc.), (6) COMPOSITION and framing conventions. Do NOT default to photorealism or cinematic film style unless the reference images are themselves photorealistic. If the references are oil paintings, every panel must look like an oil painting. If they are watercolors, every panel must look like watercolor. MATCH THE REFERENCES EXACTLY. ${PB_PRODUCT_EXACT_LOCK} ${PB_LOGO_INTEGRITY}${productStoryboardDirective}`
+        : `MANDATORY VISUAL STYLE: Match the specific visual style, art medium, rendering style, lighting, and environment requested in the script and shown in the reference images. If the references or script specify a 2D illustrated, hand-drawn, or painterly style, you MUST render the panels in that exact medium with zero drift. Maintain visual consistency across all panels.`;
 
       // Calculate expected clip count from script duration
       const lastUserMsg = chatHistory.filter(m => m.role === "user").pop()?.text || "";
@@ -2762,20 +2794,38 @@ The sheet must contain (decide from the script itself what fits):
 2. Color Palette & Environment/Style Swatches matching the requested theme.
 3. EXACTLY ${totalClips} Sequential Storyboard Panels (labeled Shot 01 through Shot ${String(totalClips).padStart(2, "0")}) covering the FULL narrative from start to finish. Each panel represents a ${durationPlan[0]}-second clip.${panelInstruction}`;
 
-      parts.push({ text: imagePromptText });
+      // === FIDELITY PIPELINE Component 4: Constraint header injection ===
+      const finalImagePrompt = applySubjectProfilePriority(imagePromptText, subjectProfileText, sortedReferences.length);
 
-      // Attempt 1
+      // Attempt 1 with retry & validation
       let b64 = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      let correctionHint = "";
+      for (let attempt = 1; attempt <= 3; attempt++) {
         if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-        if (attempt > 1) {
+        
+        let promptForAttempt = finalImagePrompt;
+        if (attempt === 2) {
           setStatusMessage("First attempt returned no image — retrying with simplified prompt...");
+          promptForAttempt = `Generate a visual storyboard sheet in 16:9 aspect ratio with EXACTLY ${totalClips} sequential panels (Shot 01 through Shot ${String(totalClips).padStart(2, "0")}) for a ${extractedDuration}-second film showing this concept: ${cleanStoryboardScript.substring(0, 800)}. Include character designs if applicable, color palette swatches, and clear panel compositions. Each panel must cover a different part of the story — do NOT repeat scenes. Do NOT include any brand names, logos, or copyrighted content.`;
+        } else if (attempt === 3 && correctionHint) {
+          setStatusMessage("Refining storyboard for better fidelity...");
+          promptForAttempt = finalImagePrompt + `\n\n⚠️ CORRECTION REQUIRED: ${correctionHint}`;
         }
 
-        const requestParts = attempt === 1 ? parts : [
-          // On retry, use a simpler prompt without reference images but still request all panels
-          { text: `Generate a visual storyboard sheet in 16:9 aspect ratio with EXACTLY ${totalClips} sequential panels (Shot 01 through Shot ${String(totalClips).padStart(2, "0")}) for a ${extractedDuration}-second film showing this concept: ${cleanStoryboardScript.substring(0, 800)}. Include character designs if applicable, color palette swatches, and clear panel compositions. Each panel must cover a different part of the story — do NOT repeat scenes. Do NOT include any brand names, logos, or copyrighted content.` }
-        ];
+        const requestParts = [];
+        if (attempt !== 2) {
+          if (contactSheetB64) {
+            requestParts.push({ inlineData: { mimeType: "image/jpeg", data: contactSheetB64 } });
+          }
+          sortedReferences.forEach(img => {
+            const imgB64 = pbGetImageBase64(img);
+            const mime = pbGetImageMimeType(img);
+            requestParts.push({ inlineData: { mimeType: mime, data: imgB64 } });
+          });
+        }
+        requestParts.push({ text: promptForAttempt });
+
+        setStatusMessage(`Generating storyboard sheet using Nano Banana Pro 2 (Attempt ${attempt}/3)...`);
 
         const res = await fetch(
           `${GEMINI_PROXY_BASE}/models/${IMAGE_MODEL}:generateContent`,
@@ -2802,7 +2852,7 @@ The sheet must contain (decide from the script itself what fits):
           data = await pbReadGeminiJson(res, `Storyboard generation attempt ${attempt}`);
         } catch (apiErr) {
           console.warn(`Storyboard attempt ${attempt} API error:`, apiErr);
-          if (attempt === 2 || /non-JSON HTTP|GEMINI_API_KEY|not configured|NOT_FOUND|not found/i.test(apiErr.message)) throw apiErr;
+          if (attempt === 2 || (attempt === 3 && correctionHint) || /non-JSON HTTP|GEMINI_API_KEY|not configured|NOT_FOUND|not found/i.test(apiErr.message)) throw apiErr;
           continue;
         }
         
@@ -2814,18 +2864,36 @@ The sheet must contain (decide from the script itself what fits):
           }
         }
 
-        if (b64) break;
+        if (!b64) {
+          const textParts = resParts.filter(p => p.text).map(p => p.text).join(" ");
+          console.warn(`Storyboard attempt ${attempt}: No image returned. Text response: "${textParts.substring(0, 200)}"`);
+          continue;
+        }
 
-        // Log what was returned for debugging
-        const textParts = resParts.filter(p => p.text).map(p => p.text).join(" ");
-        console.warn(`Storyboard attempt ${attempt}: No image returned. Text response: "${textParts.substring(0, 200)}"`);
-        const blockReason = data.candidates?.[0]?.finishReason;
-        if (blockReason) console.warn(`Finish reason: ${blockReason}`);
+        // === FIDELITY PIPELINE Component 5: Grounding Assessor & Self-Correction ===
+        if (attempt <= 2 && sortedReferences.length > 0 && !correctionHint) {
+          setStatusMessage("Validating fidelity...");
+          const rawBase64s = sortedReferences.map(pbGetImageBase64);
+          const dataUrls = rawBase64s.map(b => b.startsWith("data:") ? b : `data:image/jpeg;base64,${b}`);
+          const generatedDataUrl = `data:image/png;base64,${b64}`;
+          const assessment = await assessImageGrounding("", cleanStoryboardScript, dataUrls, generatedDataUrl, {
+            subjectProfileLock: true,
+            minimumScore: 75
+          });
+          console.log(`[Storyboard Grounding] Score: ${assessment.score}, Pass: ${assessment.pass}, Issues: ${assessment.issues}`);
+          if (!assessment.pass && assessment.correction) {
+            correctionHint = assessment.correction;
+            b64 = null; // reset to trigger retry
+            continue;
+          }
+        }
+
+        break;
       }
 
-      if (!b64) throw new Error("No image data returned for Visual Board after 2 attempts. The prompt may have triggered content safety filters — try simplifying the script or removing specific brand/character references.");
+      if (!b64) throw new Error("No image data returned for Visual Board after all attempts.");
       setStoryboardImage(b64);
-	      await pbExtractCharactersFromStoryboard(b64, baseReferenceImages);
+      await pbExtractCharactersFromStoryboard(b64, baseReferenceImages);
       setIsGenerating(false);
       pbReleaseWakeLock();
       abortControllerRef.current = null;

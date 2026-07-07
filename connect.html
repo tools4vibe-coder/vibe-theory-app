@@ -575,6 +575,139 @@
   const MAX_GENERATIONS = 3;
   let lastStoryboardData = null; // { b64, userPrompt, refImages }
   const STATE_API = '/api/state';
+  let lastSubjectProfile = ''; // cached identity profile from fidelity pipeline
+
+  // =====================================================================
+  // NEBULA PRODUCT FIDELITY PIPELINE (5 Components)
+  // =====================================================================
+
+  // Helper: call Gemini text API for fidelity analysis
+  async function callGeminiForFidelity(systemInstr, contentParts, jsonMode) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    const body = {
+      contents: [{ parts: contentParts }],
+      systemInstruction: { parts: [{ text: systemInstr }] },
+    };
+    if (jsonMode) body.generationConfig = { responseMimeType: 'application/json' };
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
+  // Component 1: Smart Reference Selection — reorder images by prompt relevance
+  async function selectBestSubjectImages(prompt, images) {
+    if (images.length <= 1) return images;
+    try {
+      const parts = [];
+      images.forEach((img, idx) => {
+        parts.push({ text: `Image ${idx}:` });
+        parts.push({ inlineData: { mimeType: img.mimeType || 'image/jpeg', data: img.base64 } });
+      });
+      parts.push({ text: `You are given ${images.length} product/character images.\nUser prompt: "${prompt}"\nIdentify which image index (or indices) are MOST RELEVANT as a visual reference.\nReturn at most 3 indices, ordered best-first.\nReturn ONLY strict JSON: { "selected": [0, 2, 1] }` });
+      const result = await callGeminiForFidelity('You are a visual reference selector.', parts, true);
+      const parsed = JSON.parse(result.trim());
+      const sel = Array.isArray(parsed?.selected) ? parsed.selected : [];
+      if (sel.length > 0) {
+        const picked = sel.map(i => images[i]).filter(Boolean);
+        const rest = images.filter((_, i) => !sel.includes(i));
+        return [...picked, ...rest];
+      }
+    } catch (e) { console.warn('[selectBest] fallback:', e); }
+    return images;
+  }
+
+  // Component 2: Multi-View Identity Prompt — extract stable identity text from references
+  async function extractMultiViewReferencePrompt(images) {
+    if (images.length <= 1) return '';
+    try {
+      const parts = images.map(img => ({ inlineData: { mimeType: img.mimeType || 'image/jpeg', data: img.base64 } }));
+      parts.push({ text: `These images show the same subject/product from different angles.\nExtract the stable, reusable visual truth:\n- silhouette and proportions\n- materials and texture\n- seams, closures, straps, hardware\n- branding placement and recurring markers\n- color relationships\n- what changes vs what stays fixed\n\nReturn strict JSON:\n{ "summary": "compact multi-view reference summary", "constraints": ["rule1", "rule2"] }` });
+      const result = await callGeminiForFidelity('You summarize multi-angle reference images into one identity-preservation pack.', parts, true);
+      const parsed = JSON.parse(result.trim()) || {};
+      const summary = String(parsed.summary || '').trim();
+      const constraints = Array.isArray(parsed.constraints) ? parsed.constraints : [];
+      return [summary, ...constraints.map(c => `- ${c}`)].filter(Boolean).join('\n').trim();
+    } catch (e) { console.warn('[extractMultiView] failed:', e); return ''; }
+  }
+
+  // Component 3: Contact Sheet — stitch references into one image
+  async function buildReferenceContactSheet(images, label = 'SUBJECT REFERENCE PACK') {
+    if (images.length <= 1) return null;
+    const tile = 420, labelH = 34, gap = 12;
+    const cols = Math.min(4, Math.ceil(Math.sqrt(images.length)));
+    const rows = Math.ceil(images.length / cols);
+    const w = cols * tile + (cols + 1) * gap;
+    const h = rows * (tile + labelH) + (rows + 1) * gap + 46;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#111827'; ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(label, gap, 30);
+    await Promise.all(images.map((imgObj, idx) => new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const col = idx % cols, row = Math.floor(idx / cols);
+        const x = gap + col * (tile + gap), y = 46 + gap + row * (tile + labelH + gap);
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(x, y, tile, tile);
+        const scale = Math.min(tile / img.width, tile / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, x + (tile - dw) / 2, y + (tile - dh) / 2, dw, dh);
+        ctx.fillStyle = '#111827'; ctx.font = '18px sans-serif';
+        ctx.fillText(`View ${idx + 1}`, x + 10, y + tile + 24);
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = `data:${imgObj.mimeType || 'image/jpeg'};base64,${imgObj.base64}`;
+    })));
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    return dataUrl.split(',')[1]; // return just base64
+  }
+
+  // Component 4: Constraint Header Injection — prepend identity lock to prompt
+  function applySubjectProfilePriority(prompt, profileText, imageCount) {
+    if (imageCount <= 0) return prompt;
+    const lock = [
+      `⚠️ SUBJECT IDENTITY LOCK (HIGHEST PRIORITY):`,
+      `The image(s) provided are the ACTUAL SUBJECT. You are NOT creating a new design.`,
+      `REPRODUCE the exact subject shown in the reference:`,
+      `  • Same silhouette, shape, proportions — do NOT redesign`,
+      `  • Same color blocking and palette — no substitutions`,
+      `  • Same materials, textures, stitching, hardware`,
+      `  • Same branding, logos, labels — exact placement`,
+      `  • Same construction details, seams, pockets, straps`,
+      `Do NOT invent a generic replacement. Do NOT simplify.`,
+      profileText ? `Confirmed identity profile: ${profileText}` : '',
+      ``,
+      `SCENE / TREATMENT INSTRUCTION (apply to the above subject):`,
+    ].filter(Boolean).join('\n');
+    return [lock, prompt].join('\n').trim();
+  }
+
+  // Component 5: Grounding Assessor — validate generated image against references
+  async function assessImageGrounding(prompt, refImages, generatedB64, minScore = 75) {
+    if (!refImages.length) return { pass: true, score: 100, issues: '', correction: '', failureType: 'none' };
+    try {
+      const parts = [];
+      refImages.forEach((img, idx) => {
+        parts.push({ text: `Reference ${idx + 1}:` });
+        parts.push({ inlineData: { mimeType: img.mimeType || 'image/jpeg', data: img.base64 } });
+      });
+      parts.push({ text: 'Generated output:' });
+      parts.push({ inlineData: { mimeType: 'image/png', data: generatedB64 } });
+      parts.push({ text: `Evaluate whether the generated image faithfully reproduces the subject from the references.\nUser prompt: "${prompt}"\nFail if the output invents, removes, or changes visible details such as silhouette, geometry, materials, seams, hardware, pockets, straps, closures, logo placement, color blocking, face identity, or construction logic.\nReturn strict JSON:\n{ "grounding_score": 0-100, "hallucination_detected": boolean, "failure_type": "composition"|"product"|"mixed"|"other"|"none", "issues": "short description", "correction": "single actionable correction sentence" }` });
+      const result = await callGeminiForFidelity('You are an AI image quality and product grounding assessor.', parts, true);
+      const data = JSON.parse(result.trim());
+      const score = Math.max(0, Math.min(100, Number(data.grounding_score || 0)));
+      const pass = !data.hallucination_detected && score >= minScore;
+      return { pass, score, issues: String(data.issues || ''), correction: String(data.correction || ''), failureType: data.failure_type || 'other' };
+    } catch (e) { console.warn('[assessGrounding] failed, defaulting pass:', e); return { pass: true, score: 100, issues: '', correction: '', failureType: 'none' }; }
+  }
+
+  // =====================================================================
+  // END FIDELITY PIPELINE
+  // =====================================================================
 
   let userName = '';
   let chatHistory = []; // { role: 'user'|'model', text, images?, storyboardB64? }
@@ -843,32 +976,77 @@
     await generateStoryboard(text, currentImages);
   }
 
-  // --- Generate Visual Storyboard ---
+  // --- Generate Visual Storyboard (with Nebula Fidelity Pipeline) ---
   async function generateStoryboard(userPrompt, refImages) {
     isTyping = true;
     chatHistory.push({ role: 'model', text: '🎨 Creating your visual storyboard...' });
     renderChatArea();
 
     try {
-      const imgParts = [];
-      for (const img of refImages) {
-        imgParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
-      }
-
-      // Also gather any images from previous messages
+      // Collect ALL reference images (current + previous messages)
+      let allRefImages = [...refImages];
       for (const msg of chatHistory) {
         if (msg.role === 'user' && msg.images && msg !== chatHistory[chatHistory.length - 2]) {
           for (const img of msg.images) {
-            if (img.base64) imgParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
+            if (img.base64) allRefImages.push(img);
           }
         }
+      }
+
+      // === FIDELITY PIPELINE ===
+      let pipelineStatus = '';
+
+      // Step 1: Smart Reference Selection (reorder by prompt relevance)
+      if (allRefImages.length > 1) {
+        pipelineStatus = '🔍 Analyzing references...';
+        chatHistory.find(m => m.text?.includes('Creating your visual'))
+          && (chatHistory.find(m => m.text?.includes('Creating your visual')).text = pipelineStatus);
+        renderChatArea();
+        allRefImages = await selectBestSubjectImages(userPrompt, allRefImages);
+      }
+
+      // Step 2: Multi-View Identity Extraction
+      let subjectProfile = '';
+      if (allRefImages.length > 1) {
+        pipelineStatus = '🧬 Extracting identity profile...';
+        chatHistory.find(m => m.text === pipelineStatus || m.text?.includes('Analyzing'))
+          && (chatHistory.find(m => m.text?.includes('Analyzing') || m.text === pipelineStatus).text = pipelineStatus);
+        renderChatArea();
+        subjectProfile = await extractMultiViewReferencePrompt(allRefImages);
+        lastSubjectProfile = subjectProfile;
+      }
+
+      // Step 3: Build Contact Sheet
+      let contactSheetB64 = null;
+      if (allRefImages.length > 1) {
+        pipelineStatus = '📋 Building reference contact sheet...';
+        chatHistory.find(m => m.text?.includes('Extracting') || m.text?.includes('Building'))
+          && (chatHistory.find(m => m.text?.includes('Extracting') || m.text?.includes('Building')).text = pipelineStatus);
+        renderChatArea();
+        contactSheetB64 = await buildReferenceContactSheet(allRefImages);
+      }
+
+      // Update status to generating
+      const statusMsg = chatHistory.find(m => m.text?.includes('Building') || m.text?.includes('Creating'));
+      if (statusMsg) statusMsg.text = '🎨 Generating storyboard...';
+      renderChatArea();
+
+      // Build image parts for the API call
+      const imgParts = [];
+      // Add contact sheet first if available (single combined reference)
+      if (contactSheetB64) {
+        imgParts.push({ inlineData: { mimeType: 'image/jpeg', data: contactSheetB64 } });
+      }
+      // Then individual images
+      for (const img of allRefImages) {
+        imgParts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
       }
 
       // Build tag context
       const allImages = chatHistory.filter(m => m.role === 'user' && m.images).flatMap(m => m.images);
       let tagContext = '';
       if (allImages.length > 0) {
-        tagContext = `\nVISUAL REFERENCE IMAGES PROVIDED:\n${allImages.map((img, i) => `- Image [${i+1}] tag: "${img.tag}"`).join('\n')}\nCRITICAL: The characters/products must look IDENTICAL to the reference images. Maintain exact face, features, hair, clothing, and body.`;
+        tagContext = `\nVISUAL REFERENCE IMAGES PROVIDED:\n${allImages.map((img, i) => `- Image [${i+1}] tag: "${img.tag}"`).join('\n')}`;
       }
 
       // Detect stylized art style
@@ -879,7 +1057,7 @@
         ? `Use the art style explicitly requested (e.g. anime, sketch, cartoon, etc.) for all panels and character designs.`
         : `MANDATORY VISUAL STYLE: Ultra-realistic, photorealistic, 4K cinematic quality. Every panel must look like a real photograph or high-end film still — NOT a sketch, NOT a cartoon, NOT an illustration.`;
 
-      // Sanitize prompt for image model — replace copyrighted names with generic equivalents
+      // Sanitize prompt for image model
       function sanitizeForImageGen(text) {
         const replacements = [
           [/\bhulk\b/gi, 'a massive green muscular superhero'],
@@ -906,9 +1084,15 @@
 
       const cleanPrompt = sanitizeForImageGen(userPrompt);
 
+      // Step 4: Apply Subject Profile Priority (identity lock header)
+      let finalPrompt = cleanPrompt;
+      if (allRefImages.length > 0) {
+        finalPrompt = applySubjectProfilePriority(cleanPrompt, subjectProfile, allRefImages.length);
+      }
+
       const storyboardPrompt = `Generate a comprehensive visual board and storyboard sheet in 16:9 ratio for this video concept:
 
-"${cleanPrompt}"
+"${finalPrompt}"
 ${tagContext}
 
 ${styleDirective}
@@ -918,15 +1102,25 @@ The sheet must be styled like a professional production concept art sheet contai
 2. Color Palette & Environment: Swatches and key background landscapes defining the setting — ${isStylized ? 'in the requested style' : 'photorealistic, cinematic, 4K quality'}.
 3. Sequential Storyboard Panels: A grid of multiple storyboard frames (minimum 6, labeled Shot 01, Shot 02, etc.) that tell the narrative progression — each panel must be ${isStylized ? 'in the requested art style' : 'ultra-realistic and look like a real movie frame, NOT a drawn sketch'}.
 
-CRITICAL REQUIREMENT: If reference images are provided, the character in the visual board must look identical to the person in the reference images (matching their exact face, body, hair, and clothing style).
-Do NOT include any copyrighted characters, brand logos, or trademarked content. Create original character designs inspired by the user's description.`;
+CRITICAL REQUIREMENT: If reference images are provided, the character/product in the visual board must look IDENTICAL to the reference images.
+Do NOT include any copyrighted characters, brand logos, or trademarked content.`;
 
-      // Try up to 2 attempts
+      // Generate with retry (up to 2 attempts + 1 grounding retry)
       let imgB64 = null;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const requestParts = attempt === 1
-          ? [...imgParts, { text: storyboardPrompt }]
-          : [...imgParts, { text: `Generate a creative visual storyboard sheet in 16:9 ratio with character designs and 6 sequential panels for this concept: "${cleanPrompt}". Use original character designs inspired by the description. ${isStylized ? '' : 'Ultra-realistic photorealistic style.'} Do NOT use any copyrighted characters or brand names.` }];
+      let correctionHint = '';
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        let promptForAttempt = storyboardPrompt;
+        if (attempt === 2) {
+          // Simplified fallback prompt
+          promptForAttempt = `Generate a creative visual storyboard sheet in 16:9 ratio with character designs and 6 sequential panels for this concept: "${cleanPrompt}". Use original character designs inspired by the description. ${isStylized ? '' : 'Ultra-realistic photorealistic style.'} Do NOT use any copyrighted characters or brand names.`;
+        } else if (attempt === 3 && correctionHint) {
+          // Grounding correction retry
+          promptForAttempt = storyboardPrompt + `\n\n⚠️ CORRECTION REQUIRED: ${correctionHint}`;
+          if (statusMsg) statusMsg.text = '🔄 Refining storyboard for better fidelity...';
+          renderChatArea();
+        }
+
+        const requestParts = [...imgParts, { text: promptForAttempt }];
 
         try {
           const fRes = await fetch(
@@ -943,7 +1137,7 @@ Do NOT include any copyrighted characters, brand logos, or trademarked content. 
           const fData = await fRes.json();
           if (fData.error) {
             console.warn(`Storyboard attempt ${attempt} error:`, fData.error.message);
-            if (attempt === 2) throw new Error(fData.error.message);
+            if (attempt >= 2 && !correctionHint) throw new Error(fData.error.message);
             continue;
           }
 
@@ -954,30 +1148,45 @@ Do NOT include any copyrighted characters, brand logos, or trademarked content. 
               break;
             }
           }
-          if (imgB64) break;
 
-          if (attempt === 1) {
-            console.warn('Attempt 1 returned no image — retrying with simplified prompt...');
+          if (!imgB64) {
+            if (attempt === 1) console.warn('Attempt 1 no image — retrying...');
+            continue;
           }
+
+          // Step 5: Grounding Validation (only on first successful generation with references)
+          if (attempt <= 2 && allRefImages.length > 0 && !correctionHint) {
+            if (statusMsg) statusMsg.text = '🔍 Validating fidelity...';
+            renderChatArea();
+            const assessment = await assessImageGrounding(userPrompt, allRefImages, imgB64);
+            console.log(`[Grounding] Score: ${assessment.score}, Pass: ${assessment.pass}, Issues: ${assessment.issues}`);
+            if (!assessment.pass && assessment.correction) {
+              correctionHint = assessment.correction;
+              console.warn(`[Grounding] Failed (${assessment.score}) — retrying with correction: ${correctionHint}`);
+              imgB64 = null; // force retry
+              continue;
+            }
+          }
+
+          break; // success
         } catch (attemptErr) {
           console.warn(`Storyboard attempt ${attempt} failed:`, attemptErr);
-          if (attempt === 2) throw attemptErr;
+          if (attempt === 3 || (attempt === 2 && !correctionHint)) throw attemptErr;
         }
       }
 
-      if (!imgB64) throw new Error("No storyboard image returned after 2 attempts.");
+      if (!imgB64) throw new Error("No storyboard image returned after all attempts.");
 
-      // Remove the "Creating..." message
-      chatHistory = chatHistory.filter(m => m.text !== '🎨 Creating your visual storyboard...');
+      // Remove the status message
+      chatHistory = chatHistory.filter(m => !m.text?.includes('Creating') && !m.text?.includes('Generating') && !m.text?.includes('Analyzing') && !m.text?.includes('Extracting') && !m.text?.includes('Building') && !m.text?.includes('Validating') && !m.text?.includes('Refining'));
 
-      // Add storyboard as a special message
       // Save storyboard data for video generation
-      lastStoryboardData = { b64: imgB64, userPrompt, refImages };
+      lastStoryboardData = { b64: imgB64, userPrompt, refImages: allRefImages };
 
       chatHistory.push({ role: 'model', storyboardB64: imgB64, text: '' });
 
     } catch (e) {
-      chatHistory = chatHistory.filter(m => m.text !== '🎨 Creating your visual storyboard...');
+      chatHistory = chatHistory.filter(m => !m.text?.includes('Creating') && !m.text?.includes('Generating') && !m.text?.includes('Analyzing') && !m.text?.includes('Extracting') && !m.text?.includes('Building') && !m.text?.includes('Validating') && !m.text?.includes('Refining'));
       chatHistory.push({ role: 'model', text: `⚠️ Storyboard generation failed: ${e.message}. Try again!` });
     }
 
