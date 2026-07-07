@@ -1485,17 +1485,46 @@ CLIP2: [prompt text]`
       const clip2B64 = await callOmniFlash(inputParts2, '10s');
       clearInterval(interval2);
 
-      // === Step 5: Package both clips for seamless playback ===
-      progressMsg.videoProgress = '⏳ Step 4/4: Preparing your 20s film...';
-      progressMsg.progressPct = 95;
+      // === Step 5: Merge clips or package for dual playback ===
+      progressMsg.videoProgress = '⏳ Step 4/4: Stitching your clips into one 20s film...';
+      progressMsg.progressPct = 85;
       renderChatArea();
 
-      const videoClip1 = `data:video/mp4;base64,${clip1B64}`;
-      const videoClip2 = `data:video/mp4;base64,${clip2B64}`;
+      let mergedSrc = null;
+      try {
+        const mergeRes = await fetch('/api/merge-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clips: [
+              { url: `data:video/mp4;base64,${clip1B64}`, trimStart: 0, trimEnd: 10 },
+              { url: `data:video/mp4;base64,${clip2B64}`, trimStart: 0, trimEnd: 10 }
+            ],
+            aspectRatio: '9:16'
+          })
+        });
+        if (mergeRes.ok) {
+          const contentType = mergeRes.headers.get("Content-Type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await mergeRes.json();
+            mergedSrc = json.url;
+          } else {
+            const mergedBlob = await mergeRes.blob();
+            mergedSrc = URL.createObjectURL(mergedBlob);
+          }
+        }
+      } catch (mergeErr) {
+        console.warn('Background merge failed, using client dual-clips fallback:', mergeErr);
+      }
 
-      // === Done — show seamless dual-clip player ===
       chatHistory = chatHistory.filter(m => m !== progressMsg);
-      chatHistory.push({ role: 'model', videoClips: [videoClip1, videoClip2], text: '' });
+      if (mergedSrc) {
+        chatHistory.push({ role: 'model', videoSrc: mergedSrc, text: '' });
+      } else {
+        const videoClip1 = `data:video/mp4;base64,${clip1B64}`;
+        const videoClip2 = `data:video/mp4;base64,${clip2B64}`;
+        chatHistory.push({ role: 'model', videoClips: [videoClip1, videoClip2], text: '' });
+      }
       chatHistory.push({ role: 'model', text: '🎬 Your 20-second film is ready! Download it or send another idea.' });
 
       incrementGenCount();

@@ -337,35 +337,68 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unsupported aspect ratio" }, { status: 400 });
     }
 
-    // Step 1: Process all individual clips
-    for (let idx = 0; idx < clips.length; idx++) {
-      const clip = clips[idx];
-      const trimStart = Number(clip.trimStart || 0);
-      const trimEnd = Number(clip.trimEnd || 10);
-      if (trimEnd <= trimStart) {
-        return NextResponse.json({ error: "Clip trimEnd must be greater than trimStart" }, { status: 400 });
-      }
-      if (trimEnd - trimStart > MAX_CLIP_SECONDS) {
-        return NextResponse.json({ error: `Clip duration exceeds ${MAX_CLIP_SECONDS} seconds` }, { status: 413 });
-      }
-      if (!["fit", "fill"].includes(clip.cropRatio || "fit")) {
-        return NextResponse.json({ error: "Unsupported crop ratio" }, { status: 400 });
-      }
-      const rawPath = path.join(tempDir, `raw_${idx}.mp4`);
-      const procPath = path.join(tempDir, `proc_${idx}.mp4`);
+    let mergedPath = null;
 
-      await saveVideo(clip.url, rawPath);
-      processClip(rawPath, procPath, trimStart, trimEnd, clip.cropRatio || "fit", aspectRatio);
-      processedFiles.push(procPath);
+    // --- FAST CONCAT BYPASS ---
+    // If no transitions, no music, and we just want a quick join of clips,
+    // we can do a direct bitstream concatenation without transcoding.
+    // This completes in milliseconds and avoids serverless timeouts.
+    const isFastConcatEligible = (parseFloat(transitionSeconds) || 0) === 0 && !musicB64;
+    if (isFastConcatEligible) {
+      try {
+        console.log("Attempting fast concat bypass...");
+        const rawPaths = [];
+        for (let idx = 0; idx < clips.length; idx++) {
+          const clip = clips[idx];
+          const rawPath = path.join(tempDir, `raw_${idx}.mp4`);
+          await saveVideo(clip.url, rawPath);
+          rawPaths.push(rawPath);
+        }
+        
+        const concatListPath = path.join(tempDir, "fast_concat.txt");
+        const listContent = rawPaths.map(f => `file '${f.replace(/\\/g, "/")}'`).join("\n");
+        fs.writeFileSync(concatListPath, listContent);
+
+        const mergedOutputPath = path.join(tempDir, "final_merged.mp4");
+        execSync(`"${ffmpegPath}" -y -f concat -safe 0 -i "${concatListPath}" -c copy "${mergedOutputPath}"`);
+        
+        mergedPath = mergedOutputPath;
+        console.log("Fast concat bypass successful!");
+      } catch (fastConcatErr) {
+        console.warn("Fast concat bypass failed, falling back to full transcode path:", fastConcatErr);
+      }
     }
 
-    // Step 2: Merge the processed clips
-    let mergedPath;
-    try {
-      mergedPath = crossfadeClips(processedFiles, tempDir, parseFloat(transitionSeconds) || 0, transitions);
-    } catch (crossfadeErr) {
-      console.warn("Crossfade merge failed, falling back to concat:", crossfadeErr);
-      mergedPath = concatClips(processedFiles, tempDir);
+    if (!mergedPath) {
+      // Step 1: Process all individual clips
+      for (let idx = 0; idx < clips.length; idx++) {
+        const clip = clips[idx];
+        const trimStart = Number(clip.trimStart || 0);
+        const trimEnd = Number(clip.trimEnd || 10);
+        if (trimEnd <= trimStart) {
+          return NextResponse.json({ error: "Clip trimEnd must be greater than trimStart" }, { status: 400 });
+        }
+        if (trimEnd - trimStart > MAX_CLIP_SECONDS) {
+          return NextResponse.json({ error: `Clip duration exceeds ${MAX_CLIP_SECONDS} seconds` }, { status: 413 });
+        }
+        if (!["fit", "fill"].includes(clip.cropRatio || "fit")) {
+          return NextResponse.json({ error: "Unsupported crop ratio" }, { status: 400 });
+        }
+        const rawPath = path.join(tempDir, `raw_${idx}.mp4`);
+        const procPath = path.join(tempDir, `proc_${idx}.mp4`);
+
+        await saveVideo(clip.url, rawPath);
+        processClip(rawPath, procPath, trimStart, trimEnd, clip.cropRatio || "fit", aspectRatio);
+        processedFiles.push(procPath);
+      }
+
+      // Step 2: Merge the processed clips
+      try {
+        mergedPath = crossfadeClips(processedFiles, tempDir, parseFloat(transitionSeconds) || 0, transitions);
+      } catch (crossfadeErr) {
+        console.warn("Crossfade merge failed, falling back to concat:", crossfadeErr);
+        mergedPath = concatClips(processedFiles, tempDir);
+      }
     }
 
     // Step 3: Optionally lay a continuous music bed (e.g. Lyria) under the whole timeline
