@@ -925,41 +925,139 @@ ${attemptCorrection ? `\nCORRECTION: ${attemptCorrection}` : ''}
         window.generatedClipsCache.set(clipId, [clip1, clip2]);
         const id1 = `vid_1_${Date.now()}`;
         const id2 = `vid_2_${Date.now()}`;
+        const playBtnId = `play_btn_${Date.now()}`;
+        const scrubberId = `scrubber_${Date.now()}`;
+        const timeId = `time_${Date.now()}`;
+        
         html += `
           <div class="video-result">
-            <div class="vr-label">🎬 Generated Video (Seamless 20s)</div>
-            <div style="position:relative; width:100%; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#000;">
-              <video id="${id1}" src="${clip1}" style="width:100%; height:100%; object-fit:cover; display:block;" playsinline></video>
-              <video id="${id2}" src="${clip2}" style="width:100%; height:100%; object-fit:cover; display:none;" playsinline></video>
+            <div class="vr-label">🎬 Generated Video (Seamless 20s with Crossfade)</div>
+            <div style="position:relative; width:100%; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#000; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+              <video id="${id1}" src="${clip1}" style="width:100%; height:100%; object-fit:cover; display:block; position:absolute; top:0; left:0; transition:opacity 0.8s ease-in-out; opacity:1;" playsinline></video>
+              <video id="${id2}" src="${clip2}" style="width:100%; height:100%; object-fit:cover; display:block; position:absolute; top:0; left:0; transition:opacity 0.8s ease-in-out; opacity:0;" playsinline></video>
+              
+              <!-- Custom Glassmorphic Controls -->
+              <div style="position:absolute; bottom:0; left:0; width:100%; background:linear-gradient(transparent, rgba(0,0,0,0.85)); padding:16px 12px 12px; box-sizing:border-box; display:flex; flex-direction:column; gap:8px; z-index:10;">
+                <input type="range" id="${scrubberId}" min="0" max="20" step="0.05" value="0" style="width:100%; height:4px; border-radius:2px; background:rgba(255,255,255,0.3); outline:none; -webkit-appearance:none; cursor:pointer;">
+                <div style="display:flex; justify-content:space-between; align-items:center; color:white; font-size:12px; font-weight:600; font-family:sans-serif;">
+                  <button id="${playBtnId}" style="background:rgba(255,255,255,0.25); border:none; backdrop-filter:blur(5px); color:white; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; transition:transform 0.1s;">▶ Play</button>
+                  <span id="${timeId}">0:00 / 0:20</span>
+                </div>
+              </div>
             </div>
-            <button class="vr-download" onclick="downloadMergedClips('${clipId}')">📥 Download Video</button>
+            
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="vr-download" style="flex:1;" onclick="downloadClip('${clipId}', 0)">📥 Clip Part 1</button>
+              <button class="vr-download" style="flex:1;" onclick="downloadClip('${clipId}', 1)">📥 Clip Part 2</button>
+            </div>
           </div>`;
           
-          // Setup seamless play/end chain in client browser
           setTimeout(() => {
             const v1 = document.getElementById(id1);
             const v2 = document.getElementById(id2);
-            if (v1 && v2) {
-              v1.controls = true;
-              v1.play().catch(e => console.log('Autoplay blocked:', e));
-              v2.load();
-              
-              v1.onended = () => {
-                v1.style.display = 'none';
-                v1.controls = false;
-                v2.style.display = 'block';
-                v2.controls = true;
-                v2.play().catch(e => console.log(e));
-              };
-              v2.onended = () => {
-                v2.style.display = 'none';
-                v2.controls = false;
-                v1.style.display = 'block';
-                v1.controls = true;
-                v1.currentTime = 0;
-                v1.play().catch(e => console.log(e));
-              };
+            const playBtn = document.getElementById(playBtnId);
+            const scrubber = document.getElementById(scrubberId);
+            const timeLabel = document.getElementById(timeId);
+            
+            if (!v1 || !v2 || !playBtn || !scrubber || !timeLabel) return;
+            
+            let isPlaying = false;
+            
+            function updateUI(t) {
+              scrubber.value = t.toFixed(2);
+              const min = Math.floor(t / 60);
+              const sec = Math.floor(t % 60).toString().padStart(2, '0');
+              timeLabel.textContent = `${min}:${sec} / 0:20`;
             }
+            
+            // Seamless play/crossfade ticker loop
+            let ticker = setInterval(() => {
+              if (!isPlaying) return;
+              
+              let t = 0;
+              const opacity1 = parseFloat(v1.style.opacity || '1');
+              
+              if (opacity1 > 0 && v2.style.opacity === '0') {
+                // Clip 1 is playing solo
+                t = v1.currentTime;
+                
+                // Crossfade starts at 9.2 seconds to overlap nicely
+                if (t >= 9.2) {
+                  v1.style.opacity = '0';
+                  v2.style.opacity = '1';
+                  v2.currentTime = 0.2; // slight head offset for seamless cut
+                  v2.play().catch(() => {});
+                }
+              } else if (v2.style.opacity === '1') {
+                // Clip 2 is playing solo
+                t = 10 + v2.currentTime;
+                
+                if (v1.style.opacity !== '0' && v2.currentTime > 0.5) {
+                  v1.style.opacity = '0';
+                  v1.pause();
+                }
+              }
+              
+              if (t >= 20 || v2.ended) {
+                // Loop
+                v1.pause();
+                v2.pause();
+                v1.currentTime = 0;
+                v2.currentTime = 0;
+                v1.style.opacity = '1';
+                v2.style.opacity = '0';
+                playBtn.textContent = '▶ Play';
+                isPlaying = false;
+                updateUI(0);
+              } else {
+                updateUI(t);
+              }
+            }, 50);
+            
+            playBtn.onclick = () => {
+              if (isPlaying) {
+                v1.pause();
+                v2.pause();
+                playBtn.textContent = '▶ Play';
+                isPlaying = false;
+              } else {
+                if (parseFloat(v1.style.opacity || '1') > 0) {
+                  v1.play().catch(() => {});
+                } else {
+                  v2.play().catch(() => {});
+                }
+                playBtn.textContent = '⏸ Pause';
+                isPlaying = true;
+              }
+            };
+            
+            scrubber.oninput = () => {
+              const val = parseFloat(scrubber.value);
+              updateUI(val);
+              if (val < 9.5) {
+                v1.style.opacity = '1';
+                v2.style.opacity = '0';
+                v1.currentTime = val;
+                v2.pause();
+                if (isPlaying) v1.play().catch(() => {});
+              } else {
+                v1.style.opacity = '0';
+                v2.style.opacity = '1';
+                v2.currentTime = Math.max(0, val - 10);
+                v1.pause();
+                if (isPlaying) v2.play().catch(() => {});
+              }
+            };
+            
+            // Clean up interval when player element is removed
+            const observer = new MutationObserver(() => {
+              if (!document.getElementById(id1)) {
+                clearInterval(ticker);
+                observer.disconnect();
+              }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            
           }, 100);
       } else if (msg.videoSrc) {
         html += `
@@ -1337,6 +1435,27 @@ Do NOT include any copyrighted characters, brand logos, or trademarked content.`
     return b64;
   }
 
+  async function uploadClipToBlob(b64, filename) {
+    try {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const videoBlob = new Blob([bytes], { type: "video/mp4" });
+      const formData = new FormData();
+      formData.append("file", videoBlob, filename);
+      formData.append("filename", filename);
+      
+      const uploadRes = await fetch("/api/upload-blob", { method: "POST", body: formData });
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        return uploadData.url;
+      }
+    } catch (e) {
+      console.warn("Upload blob failed, using fallback:", e);
+    }
+    return `data:video/mp4;base64,${b64}`;
+  }
+
   async function startVideoGeneration() {
     if (!lastStoryboardData) return;
     const btn = document.getElementById('genVideoBtn');
@@ -1492,13 +1611,16 @@ CLIP2: [prompt text]`
 
       let mergedSrc = null;
       try {
+        const url1 = await uploadClipToBlob(clip1B64, `clip1_${Date.now()}.mp4`);
+        const url2 = await uploadClipToBlob(clip2B64, `clip2_${Date.now()}.mp4`);
+
         const mergeRes = await fetch('/api/merge-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clips: [
-              { url: `data:video/mp4;base64,${clip1B64}`, trimStart: 0, trimEnd: 10 },
-              { url: `data:video/mp4;base64,${clip2B64}`, trimStart: 0, trimEnd: 10 }
+              { url: url1, trimStart: 0, trimEnd: 10 },
+              { url: url2, trimStart: 0, trimEnd: 10 }
             ],
             aspectRatio: '9:16'
           })
@@ -1583,14 +1705,18 @@ CLIP2: [prompt text]`
     const clip2 = clips[1];
     
     try {
+      console.log('Uploading clips to blob storage...');
+      const url1 = clip1.startsWith('data:') ? await uploadClipToBlob(clip1.split(',')[1] || clip1, `clip1_${Date.now()}.mp4`) : clip1;
+      const url2 = clip2.startsWith('data:') ? await uploadClipToBlob(clip2.split(',')[1] || clip2, `clip2_${Date.now()}.mp4`) : clip2;
+
       console.log('Sending clips to merge-video endpoint...');
       const res = await fetch('/api/merge-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clips: [
-            { url: clip1, trimStart: 0, trimEnd: 10 },
-            { url: clip2, trimStart: 0, trimEnd: 10 }
+            { url: url1, trimStart: 0, trimEnd: 10 },
+            { url: url2, trimStart: 0, trimEnd: 10 }
           ],
           aspectRatio: '9:16'
         })
@@ -1640,6 +1766,24 @@ CLIP2: [prompt text]`
           document.body.removeChild(a2);
         }, 1000);
       }
+    }
+  };
+
+  window.downloadClip = function(clipId, index) {
+    if (!window.generatedClipsCache) return;
+    const clips = window.generatedClipsCache.get(clipId);
+    if (!clips || !clips[index]) return;
+    const src = clips[index];
+    
+    try {
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = `vibetheory-clip${index + 1}-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Download failed: ' + e.message);
     }
   };
 
