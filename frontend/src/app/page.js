@@ -734,6 +734,24 @@ const buildReferenceContactSheet = async (
 };
 
 // -------------------------------------------------------------
+const fidelityMarkers = [
+  'EXACT VISUAL MATCH:',
+  'FAITHFUL REPRODUCTION:',
+  'REFERENCE FRAME ANALYSIS (MANDATORY MATCH):',
+  'VISUAL FIDELITY LOCK:',
+  'DIRECTOR SHOT LIST:',
+  'FRAME-ACCURATE REPRODUCTION:',
+  'ENHANCED PROMPT:',
+  'OPTIMIZED PROMPT:',
+  '✨ ENHANCED PROMPT:'
+];
+
+const shouldBypassOptimization = (prompt) => {
+  if (!prompt) return false;
+  return fidelityMarkers.some(marker => prompt.toUpperCase().includes(marker.toUpperCase()));
+};
+
+// -------------------------------------------------------------
 const buildAntiHallucinationPromptSuffix = (
   prompt,
   strictReferenceLock,
@@ -3843,7 +3861,7 @@ SCRIPT TO SPLIT:
     try {
       // 1. Synthesize final production prompt
       let finalPrompt = lastModelMsg;
-      if (pbFormat === "enhanced") {
+      if (pbFormat === "enhanced" && !shouldBypassOptimization(lastModelMsg)) {
         const artStyleNote = pbImages.length > 0 || characterSheetImage
           ? ` CRITICAL ART STYLE PRESERVATION: Reference artwork/images are attached. You MUST deeply analyze their exact visual style (art medium, brushwork, color palette, rendering approach) and embed an explicit ART STYLE LOCK into the enhanced brief that describes the medium and rendering. Every visual description must maintain that exact style — do NOT drift from the references' exact medium in any direction.`
           : ``;
