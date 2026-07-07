@@ -1130,7 +1130,14 @@ Do NOT include any copyrighted characters, brand logos, or trademarked content.`
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{ parts: requestParts }],
-                generationConfig: { responseModalities: ["TEXT", "IMAGE"], temperature: 1.0 }
+                generationConfig: {
+                  responseModalities: ["TEXT", "IMAGE"],
+                  temperature: 1.0,
+                  imageConfig: {
+                    imageSize: "2K",
+                    aspectRatio: "16:9"
+                  }
+                }
               })
             }
           );
