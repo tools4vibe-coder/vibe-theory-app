@@ -2901,7 +2901,7 @@ The sheet must contain (decide from the script itself what fits):
                 responseModalities: ["IMAGE"], 
                 temperature: 1.0,
                 imageConfig: {
-                  imageSize: "2K",
+                  imageSize: "4K",
                   aspectRatio: "16:9"
                 }
               }
