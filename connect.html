@@ -1344,6 +1344,11 @@ CLIP2: [prompt text]`
       promptClip1 += qualityGuard;
       promptClip2 += qualityGuard;
 
+      if (refImages.length > 0) {
+        promptClip1 = applySubjectProfilePriority(promptClip1, lastSubjectProfile || '', refImages.length);
+        promptClip2 = applySubjectProfilePriority(promptClip2, lastSubjectProfile || '', refImages.length);
+      }
+
       // === Step 2: Generate Clip 1 (0–10s) ===
       progressMsg.videoProgress = '⏳ Step 2/4: Generating Clip 1 (0–10s)...';
       progressMsg.progressPct = 25;
