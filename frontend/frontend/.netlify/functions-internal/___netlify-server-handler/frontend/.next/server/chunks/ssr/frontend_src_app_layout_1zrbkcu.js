@@ -1,3 +1,0 @@
-module.exports=[92286,a=>{"use strict";var b=a.i(7997);a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"en",children:(0,b.jsx)("body",{children:a})})},"metadata",0,{title:"Vibe Theory Studio — Cinematic Creative Director AD Studio",description:"AI-powered cinematic commercial script generator and video timeline editor."}])},96740,a=>{a.n(a.i(92286))}];
-
-//# sourceMappingURL=frontend_src_app_layout_1zrbkcu.js.map
