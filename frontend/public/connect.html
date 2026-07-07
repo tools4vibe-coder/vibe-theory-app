@@ -917,6 +917,50 @@ ${attemptCorrection ? `\nCORRECTION: ${attemptCorrection}` : ''}
             <img src="data:image/png;base64,${msg.storyboardB64}" alt="Storyboard" onclick="openLightbox(this.src)">
             ${showBtn ? '<button class="gen-video-btn" onclick="startVideoGeneration()" id="genVideoBtn">🎬 Generate Video</button>' : ''}
           </div>`;
+      } else if (msg.videoClips && msg.videoClips.length > 0) {
+        const clip1 = msg.videoClips[0];
+        const clip2 = msg.videoClips[1] || '';
+        const clipId = `clips_${msg.timestamp || Date.now()}`;
+        if (!window.generatedClipsCache) window.generatedClipsCache = new Map();
+        window.generatedClipsCache.set(clipId, [clip1, clip2]);
+        const id1 = `vid_1_${Date.now()}`;
+        const id2 = `vid_2_${Date.now()}`;
+        html += `
+          <div class="video-result">
+            <div class="vr-label">🎬 Generated Video (Seamless 20s)</div>
+            <div style="position:relative; width:100%; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#000;">
+              <video id="${id1}" src="${clip1}" style="width:100%; height:100%; object-fit:cover; display:block;" playsinline></video>
+              <video id="${id2}" src="${clip2}" style="width:100%; height:100%; object-fit:cover; display:none;" playsinline></video>
+            </div>
+            <button class="vr-download" onclick="downloadMergedClips('${clipId}')">📥 Download Video</button>
+          </div>`;
+          
+          // Setup seamless play/end chain in client browser
+          setTimeout(() => {
+            const v1 = document.getElementById(id1);
+            const v2 = document.getElementById(id2);
+            if (v1 && v2) {
+              v1.controls = true;
+              v1.play().catch(e => console.log('Autoplay blocked:', e));
+              v2.load();
+              
+              v1.onended = () => {
+                v1.style.display = 'none';
+                v1.controls = false;
+                v2.style.display = 'block';
+                v2.controls = true;
+                v2.play().catch(e => console.log(e));
+              };
+              v2.onended = () => {
+                v2.style.display = 'none';
+                v2.controls = false;
+                v1.style.display = 'block';
+                v1.controls = true;
+                v1.currentTime = 0;
+                v1.play().catch(e => console.log(e));
+              };
+            }
+          }, 100);
       } else if (msg.videoSrc) {
         html += `
           <div class="video-result">
@@ -1488,6 +1532,74 @@ CLIP2: [prompt text]`
       document.body.removeChild(a);
     } catch (e) {
       alert('Download failed: ' + e.message);
+    }
+  };
+
+  window.downloadMergedClips = async function(clipId) {
+    if (!window.generatedClipsCache) return;
+    const clips = window.generatedClipsCache.get(clipId);
+    if (!clips || clips.length === 0) return;
+    const clip1 = clips[0];
+    const clip2 = clips[1];
+    
+    try {
+      console.log('Sending clips to merge-video endpoint...');
+      const res = await fetch('/api/merge-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clips: [
+            { url: clip1, trimStart: 0, trimEnd: 10 },
+            { url: clip2, trimStart: 0, trimEnd: 10 }
+          ],
+          aspectRatio: '9:16'
+        })
+      });
+      if (res.ok) {
+        let blob;
+        const contentType = res.headers.get("Content-Type") || "";
+        if (contentType.includes("application/json")) {
+          const json = await res.json();
+          if (json.url) {
+            const blobRes = await fetch(json.url);
+            blob = await blobRes.blob();
+          } else {
+            throw new Error(json.error || "Empty response");
+          }
+        } else {
+          blob = await res.blob();
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vibetheory-merged-${Date.now()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        throw new Error(await res.text() || 'Merge service error');
+      }
+    } catch (e) {
+      console.warn('Stitching service is busy or timed out, downloading individual clips:', e);
+      alert('Stitching service timed out. Downloading Clip 1 and Clip 2 as separate files instead.');
+      
+      const a1 = document.createElement('a');
+      a1.href = clip1;
+      a1.download = `clip1-${Date.now()}.mp4`;
+      document.body.appendChild(a1);
+      a1.click();
+      document.body.removeChild(a1);
+      
+      if (clip2) {
+        setTimeout(() => {
+          const a2 = document.createElement('a');
+          a2.href = clip2;
+          a2.download = `clip2-${Date.now()}.mp4`;
+          document.body.appendChild(a2);
+          a2.click();
+          document.body.removeChild(a2);
+        }, 1000);
+      }
     }
   };
 
