@@ -1,0 +1,418 @@
+{
+  "entries": [
+    {
+      "type": "lesson",
+      "text": "Continuity between story clips comes ONLY from capturing the previous clip's actual last frame and using it as the next clip's FIRST_FRAME input. Never rely on interaction-state chaining for continuation \u2014 previous_interaction_id makes the model EDIT the prior video and reuse its opening frame. Omni does not support first+last frame interpolation.",
+      "meta": "continuity-architecture",
+      "createdAt": "2026-07-03T12:44:25Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Close-up cinematic shot of a premium brown leather backpack. A young East Asian woman with a short black bob, wearing a rust-orange jacket, slides a brass pen i...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T13:54:57Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Request blocked due to prohibited content guidelines. Please modify your input and retry.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T14:03:37Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Elegant slow pull-back shot. The two sisters stand on either side of a backlit glass display case containing the restored, glowing artifact. They look out a lar...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:03:43Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Macro close-up of the Younger Sister's hand, wearing the purple enamel ring, pressing a hidden mechanism on the stone artifact. The device clicks open, emitting...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:03:49Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Elegant slow pull-back shot. The two sisters stand on either side of a backlit glass display case containing the restored, glowing artifact. They look out a lar...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:05:18Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: Sorry, we can't create videos with real people's names or likenesses. Please remove the reference and try again. If you think this was an error, [send feedback](https://ai.google.dev/ge\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T14:21:01Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from Clip 2. Handheld 9:16. Aditi pauses her work, looks up, and smiles proudly at Meera. The camera reframes with natural, organic movement. Warm, s...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:21:39Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from Clip 2. Handheld 9:16. Aditi pauses her work, looks up, and smiles proudly at Meera. The camera reframes with natural, organic movement. Warm, s...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:21:53Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from Clip 2. Handheld 9:16. Aditi pauses her work, looks up, and smiles proudly at Meera. The camera reframes with natural, organic movement. Warm, s...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T14:22:18Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Handheld whip-pan starting exactly from the previous clip's final frame. Framed over a large teak table covered in old maps and a laptop. Aditi and Meera lean c...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T15:19:20Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Failed to execute 'atob' on 'Window': The string to be decoded is not correctly encoded.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T16:31:07Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"No video bytes returned from Omni model.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T19:30:59Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Stop-motion claymation, 12 fps. A textured, cracked clay wall with the sculpted title 'THE LAST RELIC'. Warm light bursts through the cracks in the clay letters...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:31:07Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Stop-motion claymation, 12 fps, vintage camcorder view. Dark jungle path with a clay temple archway. Aditi steps into frame, her diamond bangle catching the can...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:31:51Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Stop-motion claymation, 12 fps, vintage camcorder view. Dark jungle path with a clay temple archway. A woman steps into frame, her diamond bangle catching the c...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:31:56Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Stop-motion claymation, 12 fps, vintage camcorder view. Dark jungle path with a clay temple archway. Aditi steps into frame, her diamond bangle catching the can...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:32:29Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"No video bytes returned from Omni model.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T19:48:42Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from previous scene. The main boy breakdances, doing a one-handed freeze on a colorful playground slide platform. Neon-pink paw prints and glowing gr...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:48:49Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from previous scene. The kids and cats stand together on a concrete rooftop overlooking a glowing Indian city skyline. They strike a heroic anime pos...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:48:51Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuity from previous scene. The main boy breakdances, doing a one-handed freeze on a colorful playground slide platform. Neon-pink paw prints and glowing gr...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:49:51Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"A group of young friends and cats stand together on a secure balcony overlooking a glowing city skyline. They strike a heroic pose against a massive, bright ful...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:50:16Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"A boy breakdances, performing a one-handed freeze on a colorful playground platform. Glowing pink and green light effects emanate from his sneakers. Two cats pl...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:50:24Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"A group of young friends and cats stand together on a secure balcony overlooking a glowing city skyline. They strike a heroic pose against a massive, bright ful...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T19:51:02Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"No video bytes returned from Omni model.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-03T20:06:58Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Epic wide shot of the dusty Delhi skyline at sunset. The giant calico cat finishes her performance, looking directly at the camera. In slow motion, she drops he...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T20:07:50Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Low-angle street view looking up at the giant calico cat rapping in Delhi streets. Dust swirls around her paws. She gestures with swagger, holding her giant mic...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-03T20:08:08Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Oil-painting style. Slow tilt-down from a vibrant dawn sky filled with rich purple, orange, and golden clouds. The camera settles on a misty green forest canopy...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T13:50:57Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: Sorry, we can't create videos with real people's names or likenesses. Please remove the reference and try again. If you think this was an error, [send feedback](https://ai.google.dev/ge\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T14:08:00Z"
+    },
+    {
+      "type": "lesson",
+      "text": "Art style drifts toward photorealism when chaining clips via last-frame capture: each clip inherits the previous clip's slight drift and compounds it (generational loss). Fix: freeze one style_anchor for the whole film and inject it into every clip prompt and keyframe with explicit instruction that the starting frame is the COMPOSITION authority only \u2014 the style anchor and storyboard are the STYLE authority, and any drift in the starting frame must be corrected back.",
+      "meta": "style-drift-architecture",
+      "createdAt": "2026-07-04T14:44:49Z"
+    },
+    {
+      "type": "lesson",
+      "text": "Vague style anchors like \"classical Indian painting\" cause the image/video models to fall back to their default glossy digital aesthetic. Always name the exact school/tradition (e.g. Kangra miniature, Raja Ravi Varma academic oil), medium and surface, brush/line character, palette, and at least two NEVER statements. Storyboards must contain ONLY elements the script mentions \u2014 a giraffe once appeared in a Vrindavan scene because the model was allowed to invent scenery.",
+      "meta": "style-precision",
+      "createdAt": "2026-07-04T15:33:40Z"
+    },
+    {
+      "type": "mistake",
+      "text": "A generated clip rendered a literal YouTube-style UI collage because (a) the script referenced attachments as \"Image 1 / Image 2\" which pointed at the wrong images since the app controls attachment order, and (b) a screenshot reference containing UI chrome was copied literally. Never reference images by number in prompts; describe by tag or content. References are subject/style only \u2014 UI chrome must be discarded.",
+      "meta": "image-numbering-hallucination",
+      "createdAt": "2026-07-04T16:14:35Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: Sorry, we can't create videos with real people's names or likenesses. Please remove the reference and try again. If you think this was an error, [send feedback](https://ai.google.dev/ge\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T16:49:44Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Oil-on-canvas style. Medium shot of Krishna, a young Indian male deity with dark curly hair and a peacock feather, wearing a yellow dhoti. He sits under a Kadam...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T16:51:40Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Oil-on-canvas style. On the opposite riverbank, Radha, a young Indian female in a pink blouse and blue patterned skirt, sits with her friends. Hearing the flute...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T16:53:13Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Oil-on-canvas painting style. On a lush riverbank, a young Indian woman wearing a pink blouse and a blue patterned skirt sits with her friends. She stands up wi...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T17:01:43Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: Sorry, we can't create videos with real people's names or likenesses. Please remove the reference and try again. If you think this was an error, [send feedback](https://ai.google.dev/ge\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T17:32:52Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: Sorry, we can't create videos with real people's names or likenesses. Please remove the reference and try again. If you think this was an error, [send feedback](https://ai.google.dev/ge\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T17:57:52Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Classical Devotional Oil-on-Canvas style. Medium static shot of Krishna, a young Indian male deity with dark curly hair, a peacock feather, and a golden saffron...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T18:08:08Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:13:10Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:15:32Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:16:43Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:18:49Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:23:57Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Image-to-video does not support more than 1 image.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T19:27:34Z"
+    },
+    {
+      "type": "lesson",
+      "text": "Text directives alone cannot stop style drift in chained image-to-video generation \u2014 the model weights the starting frame PIXELS far more than words. The fix is pixel-level: repaint each captured last frame back into the locked art style (composition-identical) before using it as the next clip first frame, plus an explicit global negative ban on photorealism/3D render in every prompt for stylized films.",
+      "meta": "pixel-level-style-normalization",
+      "createdAt": "2026-07-04T19:42:02Z"
+    },
+    {
+      "type": "lesson",
+      "text": "The app must stay style-neutral: code carries zero opinions about what a film should look like. All style dos and NEVERs live in the per-film style_anchor the agent locks from the user references and chat \u2014 a painted film gets anti-realism NEVERs, a live-action film gets anti-illustration NEVERs. Never hardcode aesthetic bans (or character traits like skin color) into pipeline code; a lock that fixes one film breaks the opposite film.",
+      "meta": "style-neutrality-principle",
+      "createdAt": "2026-07-04T19:50:10Z"
+    },
+    {
+      "type": "lesson",
+      "text": "Speak Omni's native grammar: [# Sources <FIRST_FRAME>@ImageN] [# References <IMAGE_REF_N>@ImageM] headers, a lean ingredient set (first frame + shot style ref + max 3 character sheets + end-frame target, never storyboard grids), and a SHORT prompt: scene description + one line each for identity/style/dialogue/voice/end-state + one compact rules line. Official docs: overly detailed prompts cause unintended changes \u2014 walls of stacked directive blocks dilute each other.",
+      "meta": "omni-native-grammar",
+      "createdAt": "2026-07-04T19:59:46Z"
+    },
+    {
+      "type": "lesson",
+      "text": "CORRECTION to the omni-grammar lesson: the [# Sources]/[# References]/<FIRST_FRAME>/<IMAGE_REF_N>/@ImageN header syntax belongs to the APP CODE ONLY \u2014 it is generated automatically at request time from the real attachment order. The agent and script splitter must NEVER write these headers or tags into any script or prompt: hand-written ones carry wrong image numbers, create conflicting Sources declarations, and caused a clip to ignore the user storyboard entirely. Agent prompts contain ONLY plain-language scene descriptions.",
+      "meta": "headers-are-app-owned",
+      "createdAt": "2026-07-04T20:12:17Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"No video bytes returned from Omni model.\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-04T21:19:42Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Tactile clay and felt stop-motion. A bald man with glasses and beard sleeps in a bedroom set made of soft fabrics. A needle-felted wool dog leaps onto the bed, ...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-04T21:46:33Z"
+    },
+    {
+      "type": "lesson",
+      "text": "PRODUCT LOCK doctrine: when the user pastes a product image, it is auto-detected, researched online (brand, label text verbatim, exact colors/shape), confirmed with the user in chat, and then frozen. The locked product is IMMUTABLE \u2014 exact label, logo, lettering, and colors in every clip regardless of art style. It is exempt from brand-genericization (only third-party brands get generic equivalents). The frame restyler must never repaint the product region.",
+      "meta": "product-lock",
+      "createdAt": "2026-07-05T03:25:27Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Starting from the couple holding hands, Vikram spins Megha across a polished wooden miniature dancefloor. The camera tracks sideways smoothly with their movemen...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T03:31:50Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Continuing from the previous close-up, the scene transitions to a miniature studio stage under a glowing canopy of warm, tiny tungsten fairy lights. Vikram, in ...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T03:31:54Z"
+    },
+    {
+      "type": "lesson",
+      "text": "ABSOLUTE LAW OF THIS APP: for every clip after the first, the starting frame IS the captured last frame of the previous clip \u2014 no feature, flag, or optimization may ever bypass the frame chain. This law has been violated three times by well-meaning features (previous_interaction_id chaining, agent-written [# Sources] headers, and the new_scene hard-cut flag) and each time the user saw the identical failure: clip N+1 not starting from clip N. Scene changes are expressed as in-clip cinematic transitions starting FROM the chained frame, never by dropping it. Every clip records its continuitySource for verification.",
+      "meta": "frame-chain-absolute-law",
+      "createdAt": "2026-07-05T03:32:21Z"
+    },
+    {
+      "type": "lesson",
+      "text": "BOOKEND PRINCIPLE (user-designed): drift happens INSIDE a clip \u2014 it starts on-model from the chained first frame but improvises by the last second (e.g. grew hair on a bald character), and that corrupted ending poisons the next clip. Fix: every clip gets TWO anchors \u2014 the chained first frame AND a tagged end-frame target image generated on-model from the character sheets, with the contract that the clip must arrive exactly at that image in its final second. Omni has no end-frame parameter, so the tagged-ingredient instruction is the mechanism.",
+      "meta": "bookend-principle",
+      "createdAt": "2026-07-05T03:52:42Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Video generation failed with error \"Input blocked: The prompt could not be processed. Please try rephrasing the prompt or using different input. If you think this was an error, [send feedback](https://ai.google.dev/gemini-api/docs/troub\". Adjust prompts to avoid whatever triggered this (often content-safety terms, brand names, or over-complex single-clip action).",
+      "meta": null,
+      "createdAt": "2026-07-05T04:26:36Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Modern indie graphic novel style. Inside a high-tech starship cockpit, Megha, a young South Asian woman with flowing wavy dark purple-black hair, operates an in...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T04:33:21Z"
+    },
+    {
+      "type": "preference",
+      "text": "The user wants prompts written in calm, natural director language \u2014 no ALL-CAPS, no threats (\"FAILED generation\"), no IMMUTABLE/NEVER walls. Brief the video model like a colleague: begin from this frame, end on that frame, keep the character and product consistent, hold the style. Same requirements, normal voice \u2014 matching official guidance that simple prompts behave better.",
+      "meta": "calm-prompting",
+      "createdAt": "2026-07-05T04:37:49Z"
+    },
+    {
+      "type": "lesson",
+      "text": "EDITING IS THE MAIN GAME: every 10-second clip is an edited scene with 2-4 internal beats (inserts, reaction shots, match cuts, brief flashback/flash-forward connections to the story past or future), never one flat mundane take like a plain walk. Mundane story slices get elevated editorially. Internal cutaways always return home: each clip still opens from the chained continuity frame and lands on its ending frame \u2014 the middle is where the editing lives.",
+      "meta": "editing-doctrine",
+      "createdAt": "2026-07-05T04:42:27Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Modern indie graphic novel style. Inside a high-tech starship cockpit, Megha, a young South Asian woman with flowing wavy dark purple-black hair, operates an in...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T04:47:46Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Modern indie graphic novel style. Citizens cheer and wave their hands in the city streets under a bright blue sky. The camera slowly dollies forward through the...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T04:48:22Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Modern indie graphic novel style. In a soft, warm nursery, Megha and Vikkid stand together, looking down lovingly at a newborn baby wrapped in a dark blue blank...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T04:54:02Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Modern indie graphic novel style. Extreme close-up of the baby, who is wearing tiny, round blue glasses and smiling happily. Warm light radiates behind the baby...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T04:55:53Z"
+    },
+    {
+      "type": "mistake",
+      "text": "Script splitting returned invalid JSON and fell back to duplicated prompts (error: \"Expected ',' or '}' after property value in JSON at position 2596 (line 14 column 934)\"). When splitting scripts, output strictly valid JSON with no commentary.",
+      "meta": null,
+      "createdAt": "2026-07-05T23:17:50Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"### STYLE ANCHOR: DYNAMIC GRAPHIC NOVEL ART\n* **Aesthetic:** Stylized 2D digital illustration. Features clean, crisp ink outlines, dramatic comic-book shading, ...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-05T23:29:26Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Art Style: Stylized 2D digital graphic novel illustration with crisp ink outlines, high-contrast chiaroscuro shadows, and deep blacks. NEVER photorealistic, NEV...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-06T00:09:46Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"Art Style: Stylized 2D digital graphic novel illustration with crisp ink outlines, high-contrast chiaroscuro shadows, and deep blacks. A sprinting hero slides t...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-06T00:11:45Z"
+    },
+    {
+      "type": "lesson",
+      "text": "NEBULA PRODUCT FIDELITY PIPELINE (ported from the user's Nebula Flow app): product fidelity comes from a 5-part system, not prompts alone \u2014 (1) smart selection of the most prompt-relevant product views, (2) multi-view identity extraction into a stable text profile, (3) a stitched contact sheet labeled ALL IMAGES ARE ONE PRODUCT PROFILE as the primary ingredient, (4) a highest-priority product identity lock header, and (5) a generate\u2192assess\u2192correct\u2192retry loop (min score 90 for images, 70 for video last-frames) that judges output against the pack and retries with targeted corrections, returning the best candidate rather than failing. The pack is cached per product set.",
+      "meta": "nebula-fidelity-pipeline",
+      "createdAt": "2026-07-07T11:35:34Z"
+    }
+  ]
+}

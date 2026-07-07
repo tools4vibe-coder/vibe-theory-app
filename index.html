@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Theory — Video Generator Studio</title>
+  <meta name="description" content="A premium AI-powered video generator application by Vibe Theory, utilizing Google Veo and Gemini.">
+  <link rel="stylesheet" href="styles.css?v=1781610000">
+</head>
+<body>
+
+<div class="pb-app light">
+        <div class="pb-header">
+          <div class="pb-logo"><img src="assets/logo.png" alt="Vibe Theory" style="height: 32px; display: block; object-fit: contain;"></div>
+          <button class="pb-connect-btn" id="pbConnectBtn" onclick="window._pbShowConnect()"><span class="pb-connect-dot"></span> Connect <span id="pbUserCount" class="pb-user-count" style="display:none;">0</span></button>
+          <button class="pb-connect-btn" id="pbPresentationToggleBtn" onclick="window.pbTogglePresentationMode()" style="margin-left: 8px; border-color: #8b5cf6;"><span class="pb-connect-dot" style="background:#8b5cf6; animation:none;"></span> Presentation Mode</button>
+          <div style="flex:1;"></div>
+          <button class="pb-session-toggle-btn" onclick="document.getElementById('pbSessionSidebar').classList.toggle('open')" title="Session History">📂 Sessions</button>
+          <button class="pb-library-btn" id="pbLibraryBtn" onclick="window._pbOpenLibrary()" style="margin:0;">📜 Library <span class="pb-library-count" id="pbLibraryCount"></span></button>
+        </div>
+
+        <!-- SESSION SIDEBAR -->
+        <div class="pb-session-sidebar" id="pbSessionSidebar">
+          <div class="pb-session-sidebar-header">
+            <span>📂 Sessions</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="pb-import-session-btn" onclick="document.getElementById('pbSessionImportInput').click()" title="Import Session (JSON)" style="background:transparent; border:none; color:#3b82f6; font-size:11px; font-weight:600; cursor:pointer; padding:4px 6px; border-radius:5px;">📥 Import</button>
+              <input type="file" id="pbSessionImportInput" accept=".json" style="display:none;" onchange="window.pbImportSessionJson(this.files)" />
+              <button class="pb-clear-sessions-btn" onclick="window.pbClearAllSessions()" title="Clear All Sessions" style="background:transparent; border:none; color:#ef4444; font-size:11px; font-weight:600; cursor:pointer; padding:4px 6px; border-radius:5px;">🗑️ Clear All</button>
+              <button class="pb-new-session-btn" onclick="window.pbCreateNewSession()" title="New Session">+ New</button>
+            </div>
+          </div>
+          <div class="pb-session-list" id="pbSessionList"></div>
+        </div>
+
+        <div class="pb-workspace">
+          <!-- LEFT: Visuals Panel -->
+          <div class="pb-panel pb-panel-left">
+            <div class="pb-panel-header">
+              <span class="pb-panel-title">🎨 Visuals</span>
+            </div>
+            <div class="pb-panel-body" id="pbVisualsPanel">
+              <!-- Auto-extracted characters -->
+              <div class="pb-section-label"><span class="pb-dot purple"></span> Reference Images <button class="pb-autodescribe-btn" id="pbAutoDescribeBtn" onclick="window.pbAutoDescribe()" style="display:none;">✨ Auto-Describe</button></div>
+              <div class="pb-images" id="pbImages"></div>
+              <div class="pb-tag-info" id="pbTagInfo" style="display:none;">
+                💡 <strong>How it works:</strong> Name each image → tagged in the enhanced prompt → AI knows which image is which.
+              </div>
+
+              <!-- Visual Storyboard -->
+              <div class="pb-section-label" style="margin-top: 16px;"><span class="pb-dot" style="background: #06b6d4;"></span> Visual Storyboard <button class="pb-frames-clear" id="pbStoryboardClear" onclick="window.pbClearCustomStoryboard()" style="display:none;">✕ Clear</button></div>
+              <div class="pb-storyboard-display" id="pbStoryboardDisplay">
+                <div class="pb-storyboard-empty">
+                  <span style="font-size: 32px; opacity: 0.3;">📋</span>
+                  <span style="font-size: 11px; color: #94a3b8;">Upload a storyboard in the chat below</span>
+                </div>
+              </div>
+
+              <!-- Generated Storyboard Sheet -->
+              <div class="pb-section-label" style="margin-top: 16px; display:none;" id="pbGenStoryboardLabel"><span class="pb-dot" style="background: #8b5cf6;"></span> Generated Board</div>
+              <div id="pbGenStoryboard"></div>
+            </div>
+          </div>
+
+          <!-- CENTER: Video Preview -->
+          <div class="pb-panel pb-panel-center">
+            <div class="pb-panel-header">
+              <span class="pb-panel-title">🎬 Video Preview</span>
+              <span class="pb-clip-status" id="pbClipStatus"></span>
+            </div>
+            <div class="pb-panel-body pb-video-area">
+              <div class="pb-video-out" id="pbVideoOut">
+                <div class="pb-video-placeholder">
+                  <span style="font-size: 48px; opacity: 0.15;">🎬</span>
+                  <span style="font-size: 13px; color: #94a3b8;">Generated video appears here</span>
+                </div>
+              </div>
+              <!-- Multi-clip Timeline -->
+              <div class="pb-timeline" id="pbTimeline" style="display:none;">
+                <div class="pb-timeline-track" id="pbTimelineTrack"></div>
+                <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+                  <button class="pb-play-all-btn" id="pbPlayAllBtn" onclick="window.pbPlayAll()">▶ Play All</button>
+                  <button class="pb-play-all-btn" id="pbMergeDownloadBtn" onclick="window.pbMergeAndDownload()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1); display:flex; align-items:center; gap:6px;">🎬 Merge & Download</button>
+                </div>
+                <!-- Interactive Clip Editor Panel -->
+                <div id="pbClipEditorPanel" style="display:none; margin-top:8px; padding:12px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0; font-size:12px; color:#334155;"></div>
+              </div>
+            </div>
+            <!-- AI Review -->
+            <button class="pb-review-btn" id="pbReviewBtn" onclick="window.pbReviewVideo()" style="display:none;">🧠 AI Review</button>
+            <div class="pb-review-panel" id="pbReviewPanel" style="display:none;"></div>
+          </div>
+
+          <!-- RIGHT: Settings + Prompt -->
+          <div class="pb-panel pb-panel-right">
+            <div class="pb-panel-header">
+              <span class="pb-panel-title">⚙️ Settings</span>
+            </div>
+            <div class="pb-panel-body pb-settings-body">
+              <!-- Model -->
+              <div class="pb-section-label"><span class="pb-dot green"></span> Model</div>
+              <select class="pb-model-select" id="pbModelSelect" onchange="window.pbSetModel(this.value)" style="width:100%;">
+                <optgroup label="Gemini Omni (Conversational Video)">
+                  <option value="gemini-omni-flash-preview">🌌 Gemini Omni Flash</option>
+                </optgroup>
+                <optgroup label="Veo 3.1 (Latest)">
+                  <option value="veo-3.1-fast-generate-preview" selected>⚡ Veo 3.1 Fast</option>
+                  <option value="veo-3.1-generate-preview">💎 Veo 3.1 Quality</option>
+                  <option value="veo-3.1-lite-generate-preview">🌱 Veo 3.1 Lite</option>
+                </optgroup>
+                <optgroup label="Veo 3.0">
+                  <option value="veo-3.0-fast-generate-001">⚡ Veo 3.0 Fast</option>
+                  <option value="veo-3.0-generate-001">💎 Veo 3.0 Quality</option>
+                </optgroup>
+              </select>
+
+              <!-- Aspect Ratio -->
+              <div class="pb-section-label" style="margin-top:12px;"><span class="pb-dot orange"></span> Aspect Ratio</div>
+              <div class="pb-aspect-ratios" style="justify-content:flex-start;">
+                <button class="pb-ar-btn" data-ar="16:9" onclick="pbSetAspectRatio(this)">16:9</button>
+                <button class="pb-ar-btn active" data-ar="9:16" onclick="pbSetAspectRatio(this)">9:16</button>
+                <button class="pb-ar-btn" data-ar="1:1" onclick="pbSetAspectRatio(this)">1:1</button>
+              </div>
+
+              <!-- Resolution -->
+              <div class="pb-section-label" style="margin-top:12px;"><span class="pb-dot" style="background:#06b6d4;"></span> Resolution</div>
+              <div class="pb-resolutions" id="pbResolutions" style="display:flex; gap:6px; justify-content:flex-start; margin-top:4px;">
+                <button class="pb-res-btn active" data-res="720p" onclick="window.pbSetResolution(this)">1K</button>
+                <button class="pb-res-btn" data-res="1080p" onclick="window.pbSetResolution(this)">2K</button>
+                <button class="pb-res-btn" data-res="4k" onclick="window.pbSetResolution(this)">4K</button>
+              </div>
+
+              <!-- Format -->
+              <div class="pb-section-label" style="margin-top:12px;"><span class="pb-dot" style="background:#ec4899;"></span> Prompt Format</div>
+              <div class="pb-formats" style="justify-content:flex-start;">
+                <button class="pb-fmt active" data-fmt="enhanced" onclick="pbSetFormat(this)">Enhanced</button>
+                <button class="pb-fmt" data-fmt="json" onclick="pbSetFormat(this)">JSON</button>
+                <button class="pb-fmt" data-fmt="normal" onclick="pbSetFormat(this)">Normal</button>
+              </div>
+
+              <!-- Storyboard Toggle -->
+              <div class="pb-section-label" style="margin-top:12px;"><span class="pb-dot" style="background:#8b5cf6;"></span> Storyboard</div>
+              <label class="pb-storyboard-toggle" style="margin:0;">
+                <input type="checkbox" id="pbStoryboardToggle" checked>
+                <span class="pb-sb-switch"></span>
+                📖 Auto-generate visual board
+              </label>
+
+              <!-- Enhanced Prompt Output -->
+              <div class="pb-section-label" style="margin-top:16px;"><span class="pb-dot orange"></span> Enhanced Prompt <button class="pb-copy" onclick="pbCopy()">📋 Copy</button> <button class="pb-variations-btn" id="pbVariationsBtn" onclick="window.pbGetVariations()" style="display:none;">🔄 Variations</button></div>
+              <div class="pb-output pb-prompt-output" id="pbOutput"><span class="pb-placeholder">Enhanced prompt appears here after you send a message...</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHAT BAR (Agentic Input) -->
+        <div class="pb-chat-bar">
+          <div class="pb-chat-history" id="pbChatHistory"></div>
+          <div class="pb-chat-attachments" id="pbChatAttachments"></div>
+          <div class="pb-chat-input-row">
+            <div class="pb-chat-attach-btns">
+              <button class="pb-chat-attach-btn" onclick="document.getElementById('pbChatFileInput').click()" title="Attach image / storyboard">📎</button>
+              <button class="pb-chat-attach-btn pb-mic-btn" id="pbMicBtn" onclick="window.pbStartVoiceInput()" title="Voice input">🎙️</button>
+              <button class="pb-chat-attach-btn" onclick="window.pbResetChat()" title="Reset Conversation">🧹</button>
+            </div>
+            <textarea class="pb-chat-textarea" id="pbChatInput" placeholder="Describe your video, paste a script, or upload a storyboard..." rows="1"></textarea>
+            <input type="file" id="pbChatFileInput" multiple accept="image/*,video/*" style="display:none;" onchange="window.pbChatAddFiles(this.files)">
+            <div class="pb-chat-action-btns">
+              <button class="pb-chat-btn pb-chat-send" id="pbSendBtn" onclick="pbSendChat()" title="Send to Creative Director">💬 Send</button>
+              <button class="pb-chat-btn pb-chat-generate" id="pbGenBtn" onclick="pbGenerateVideo()" title="Generate Video">🎬 Generate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video Library Lightbox -->
+        <div class="pb-lightbox" id="pbLightbox">
+          <div class="pb-lightbox-overlay" onclick="window._pbCloseLibrary()"></div>
+          <div class="pb-lightbox-content">
+            <!-- Left: Video List -->
+            <div class="pb-lb-left">
+              <div class="pb-lightbox-header" style="justify-content: space-between;">
+                <h3>📜 Video Library</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <button class="pb-clear-all-btn" onclick="window._pbClearAllLibrary()" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.2s;">🧹 Clear All</button>
+                  <button class="pb-lightbox-close" style="position:static; margin:0;" onclick="window._pbCloseLibrary()">✕</button>
+                </div>
+              </div>
+              <div class="pb-lightbox-body" id="pbLibrary">
+                <div class="pb-library-placeholder">
+                  <span style="font-size: 40px;">🎬</span>
+                  <span style="font-size: 13px; color: #94a3b8;">Your generated videos will appear here</span>
+                </div>
+              </div>
+            </div>
+            <!-- Right: Video Player Drawer -->
+            <div class="pb-lb-drawer" id="pbLbDrawer">
+              <div class="pb-lb-drawer-header">
+                <h4>▶ Now Playing</h4>
+                <button class="pb-lightbox-close" onclick="window._pbCloseDrawer()">✕</button>
+              </div>
+              <div class="pb-lb-drawer-player" id="pbLbPlayer">
+                <div class="pb-lb-drawer-empty">
+                  <span style="font-size: 36px;">🎬</span>
+                  <span style="font-size: 12px; color: #94a3b8;">Select a video to play</span>
+                </div>
+              </div>
+              <div class="pb-lb-drawer-info" id="pbLbDrawerInfo"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Connect QR Modal -->
+        <div class="pb-qr-modal" id="pbQrModal">
+          <div class="pb-lightbox-overlay" onclick="window._pbHideConnect()"></div>
+          <div class="pb-qr-content">
+            <div class="pb-lightbox-header">
+              <h3>📱 Vibetheory Video — Connect</h3>
+              <button class="pb-lightbox-close" onclick="window._pbHideConnect()">✕</button>
+            </div>
+            <div class="pb-qr-body">
+              <div class="pb-qr-image" id="pbQrImage"></div>
+              <p class="pb-qr-url" id="pbQrUrl"></p>
+              <p class="pb-qr-hint">Scan with your phone camera or visit the link below. Works on <strong>any network</strong> — no WiFi pairing needed!</p>
+              <div style="text-align: center; margin-bottom: 16px;">
+                <button class="pb-logout-all-btn" onclick="window._pbLogoutAllUsers()">🚪 Logout All Users</button>
+              </div>
+              <div class="pb-qr-users" id="pbQrUsers"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Presentation Mode Overlay -->
+        <div class="pb-presentation-overlay" id="pbPresentationOverlay" style="display: none;">
+          <div class="pb-pres-header">
+            <div class="pb-pres-title">Vibe Theory Interactive AI Video Studio</div>
+            <button class="pb-pres-exit-btn" onclick="window.pbTogglePresentationMode()">✕ Exit Presentation Mode</button>
+          </div>
+          <div class="pb-pres-body">
+            <!-- Left: QR Code joining card -->
+            <div class="pb-pres-qr-card">
+              <h2>Join from your Phone</h2>
+              <p>Scan the QR code to write your prompt, upload your photo, and generate videos!</p>
+              <div class="pb-pres-qr-image" id="pbPresQrImage"></div>
+              <p class="pb-pres-qr-url" id="pbPresQrUrl"></p>
+              <div class="pb-pres-user-stats">
+                <span class="pb-pres-stat-label">Connected Creators:</span>
+                <span class="pb-pres-stat-value" id="pbPresUserCount">0</span>
+              </div>
+            </div>
+            <!-- Right: Live Feed Grid -->
+            <div class="pb-pres-feed-container">
+              <h3>🎬 Live Generation Feed</h3>
+              <div class="pb-pres-grid" id="pbPresGrid">
+                <div class="pb-pres-grid-empty">Waiting for creations... Scan the QR code to start!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </section>
+
+  <script src="script.js?v=1781610000"></script>
+</body>
+</html>

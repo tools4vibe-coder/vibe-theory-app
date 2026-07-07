@@ -1,0 +1,21 @@
+{
+  "name": "vikkid-studio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && npm install --prefix frontend && pip3 install -r backend/requirements.txt",
+    "build:frontend": "npm run build:export --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "python3 -m uvicorn backend.main:app --reload --port 8001",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build:frontend",
+    "start": "python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8001"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "ffmpeg-static": "^5.2.0"
+  }
+}
