@@ -665,6 +665,20 @@
     return dataUrl.split(',')[1]; // return just base64
   }
 
+  function buildAntiHallucinationPromptSuffix(prompt, strictReferenceLock, attemptCorrection) {
+    if (!strictReferenceLock) return prompt;
+    const suffix = `
+REFERENCE LOCK (MANDATORY):
+- Use connected reference image(s) as hard ground truth.
+- Do not invent, add, remove, or morph key objects/identity/logo/text.
+- Keep object geometry, proportions, materials, and colors consistent with references.
+- Preserve key object count and placement logic from references unless explicitly requested otherwise.
+- If uncertain, stay close to the reference instead of creative invention.
+${attemptCorrection ? `\nCORRECTION: ${attemptCorrection}` : ''}
+`;
+    return `${prompt}\n${suffix}`.trim();
+  }
+
   // Component 4: Constraint Header Injection — prepend identity lock to prompt
   function applySubjectProfilePriority(prompt, profileText, imageCount) {
     if (imageCount <= 0) return prompt;
@@ -1110,12 +1124,13 @@ Do NOT include any copyrighted characters, brand logos, or trademarked content.`
       let correctionHint = '';
       for (let attempt = 1; attempt <= 3; attempt++) {
         let promptForAttempt = storyboardPrompt;
+        if (allRefImages.length > 0) {
+          promptForAttempt = buildAntiHallucinationPromptSuffix(storyboardPrompt, true, (attempt === 3 && correctionHint) ? correctionHint : undefined);
+        }
         if (attempt === 2) {
           // Simplified fallback prompt
           promptForAttempt = `Generate a creative visual storyboard sheet in 16:9 ratio with character designs and 6 sequential panels for this concept: "${cleanPrompt}". Use original character designs inspired by the description. ${isStylized ? '' : 'Ultra-realistic photorealistic style.'} Do NOT use any copyrighted characters or brand names.`;
         } else if (attempt === 3 && correctionHint) {
-          // Grounding correction retry
-          promptForAttempt = storyboardPrompt + `\n\n⚠️ CORRECTION REQUIRED: ${correctionHint}`;
           if (statusMsg) statusMsg.text = '🔄 Refining storyboard for better fidelity...';
           renderChatArea();
         }
@@ -1354,6 +1369,9 @@ CLIP2: [prompt text]`
       if (refImages.length > 0) {
         promptClip1 = applySubjectProfilePriority(promptClip1, lastSubjectProfile || '', refImages.length);
         promptClip2 = applySubjectProfilePriority(promptClip2, lastSubjectProfile || '', refImages.length);
+
+        promptClip1 = buildAntiHallucinationPromptSuffix(promptClip1, true);
+        promptClip2 = buildAntiHallucinationPromptSuffix(promptClip2, true);
       }
 
       // === Step 2: Generate Clip 1 (0–10s) ===

@@ -413,6 +413,12 @@
       "text": "NEBULA PRODUCT FIDELITY PIPELINE (ported from the user's Nebula Flow app): product fidelity comes from a 5-part system, not prompts alone \u2014 (1) smart selection of the most prompt-relevant product views, (2) multi-view identity extraction into a stable text profile, (3) a stitched contact sheet labeled ALL IMAGES ARE ONE PRODUCT PROFILE as the primary ingredient, (4) a highest-priority product identity lock header, and (5) a generate\u2192assess\u2192correct\u2192retry loop (min score 90 for images, 70 for video last-frames) that judges output against the pack and retries with targeted corrections, returning the best candidate rather than failing. The pack is cached per product set.",
       "meta": "nebula-fidelity-pipeline",
       "createdAt": "2026-07-07T11:35:34Z"
+    },
+    {
+      "type": "mistake",
+      "text": "User rejected a generated clip and regenerated it. Clip prompt began: \"A sleek matte black handheld massager device begins to glow intensely with warm amber light. Its exterior gracefully dissolves and transmutes into ornate, float...\". Study what commonly fails: identity drift, wrong pacing, weak action, or ignored composition.",
+      "meta": null,
+      "createdAt": "2026-07-07T16:05:10Z"
     }
   ]
 }

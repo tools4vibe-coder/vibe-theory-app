@@ -734,6 +734,25 @@ const buildReferenceContactSheet = async (
 };
 
 // -------------------------------------------------------------
+const buildAntiHallucinationPromptSuffix = (
+  prompt,
+  strictReferenceLock,
+  attemptCorrection
+) => {
+  if (!strictReferenceLock) return prompt;
+  const suffix = `
+REFERENCE LOCK (MANDATORY):
+- Use connected reference image(s) as hard ground truth.
+- Do not invent, add, remove, or morph key objects/identity/logo/text.
+- Keep object geometry, proportions, materials, and colors consistent with references.
+- Preserve key object count and placement logic from references unless explicitly requested otherwise.
+- If uncertain, stay close to the reference instead of creative invention.
+${attemptCorrection ? `\nCORRECTION: ${attemptCorrection}` : ''}
+`;
+  return `${prompt}\n${suffix}`.trim();
+};
+
+// -------------------------------------------------------------
 // Component 4: Constraint Header Injection
 // Injects a high-priority system block to enforce strict reproduction
 // -------------------------------------------------------------
@@ -2830,12 +2849,12 @@ The sheet must contain (decide from the script itself what fits):
         if (signal.aborted) throw new DOMException("Aborted", "AbortError");
         
         let promptForAttempt = finalImagePrompt;
+        if (sortedReferences.length > 0) {
+          promptForAttempt = buildAntiHallucinationPromptSuffix(finalImagePrompt, true, (attempt === 3 && correctionHint) ? correctionHint : undefined);
+        }
         if (attempt === 2) {
           setStatusMessage("First attempt returned no image — retrying with simplified prompt...");
           promptForAttempt = `Generate a visual storyboard sheet in 16:9 aspect ratio with EXACTLY ${totalClips} sequential panels (Shot 01 through Shot ${String(totalClips).padStart(2, "0")}) for a ${extractedDuration}-second film showing this concept: ${cleanStoryboardScript.substring(0, 800)}. Include character designs if applicable, color palette swatches, and clear panel compositions. Each panel must cover a different part of the story — do NOT repeat scenes. Do NOT include any brand names, logos, or copyrighted content.`;
-        } else if (attempt === 3 && correctionHint) {
-          setStatusMessage("Refining storyboard for better fidelity...");
-          promptForAttempt = finalImagePrompt + `\n\n⚠️ CORRECTION REQUIRED: ${correctionHint}`;
         }
 
         const requestParts = [];
@@ -3261,8 +3280,10 @@ SCRIPT TO SPLIT:
       if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
 
       let currentPrompt = imagePrompt;
-      if (attempt > 1 && correctionText) {
-        currentPrompt = `⚠️ RETRY SELF-CORRECTION (PRIORITY): Fix the following issue from the previous attempt: "${correctionText}". Ensure full product fidelity and do not hallucinate details.\n\n${imagePrompt}`;
+      if (productImages.length > 0) {
+        currentPrompt = buildAntiHallucinationPromptSuffix(imagePrompt, true, (attempt > 1 && correctionText) ? correctionText : undefined);
+      } else if (attempt > 1 && correctionText) {
+        currentPrompt = `⚠️ RETRY SELF-CORRECTION (PRIORITY): Fix the following issue from the previous attempt: "${correctionText}".\n\n${imagePrompt}`;
       }
 
       const currentParts = [...parts, { text: currentPrompt }];
