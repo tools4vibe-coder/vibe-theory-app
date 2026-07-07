@@ -1,0 +1,10 @@
+var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/merge-video/route.js")
+R.c("server/chunks/[root-of-the-server]__1wziyx1._.js")
+R.c("server/chunks/node_modules_next_08s853w._.js")
+R.c("server/chunks/node_modules_next_dist_esm_build_templates_app-route_20vbe2v.js")
+R.c("server/chunks/[root-of-the-server]__0imb37j._.js")
+R.c("server/chunks/[root-of-the-server]__0g6it41._.js")
+R.c("server/chunks/[root-of-the-server]__15bjnu5._.js")
+R.c("server/chunks/frontend__next-internal_server_app_api_merge-video_route_actions_158wc1t.js")
+R.m(65486)
+module.exports=R.m(65486).exports

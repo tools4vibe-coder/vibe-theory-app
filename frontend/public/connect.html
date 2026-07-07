@@ -586,6 +586,7 @@
     const input = document.getElementById('nameInput');
     const name = input.value.trim();
     if (!name) { input.style.borderColor = '#ef4444'; input.focus(); return; }
+    await configReady; // Ensure API key is loaded
     userName = name;
     sessionStorage.setItem('connect_user', name);
     document.getElementById('nameGate').classList.add('hidden');
@@ -669,8 +670,8 @@
     }
   }
 
-  // Load API key from server
-  (async function loadConfig() {
+  // Load API key from server (store promise so we can await it before first use)
+  const configReady = (async function loadConfig() {
     try {
       const res = await fetch('/api/config');
       const data = await res.json();

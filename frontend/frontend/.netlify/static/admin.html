@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Theory — Admin Console</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f14;
+      --surface: #1a1a24;
+      --surface-2: #24243a;
+      --border: #2a2a40;
+      --text: #f1f5f9;
+      --dim: #94a3b8;
+      --accent: #6366f1;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .admin-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .admin-logo h1 {
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .admin-logo .badge {
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border-radius: 20px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .hdr-btn {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .hdr-btn:active { transform: scale(0.95); }
+    .hdr-btn.danger {
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+    .hdr-btn.danger:hover { background: rgba(239,68,68,0.25); }
+    .hdr-btn.reset {
+      background: rgba(245,158,11,0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+    .hdr-btn.reset:hover { background: rgba(245,158,11,0.25); }
+    .hdr-btn.primary {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: white;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-card {
+      flex: 1;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .stat-card .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+    }
+    .stat-card .stat-value.green { color: var(--green); }
+    .stat-card .stat-value.amber { color: var(--amber); }
+    .stat-card .stat-value.accent { color: var(--accent); }
+
+    /* Main Content */
+    .admin-main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: calc(100vh - 130px);
+    }
+
+    /* Users Panel */
+    .users-panel {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--surface);
+    }
+    .panel-header {
+      padding: 14px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 10;
+    }
+    .user-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    .user-card:hover { background: var(--surface-2); }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: white;
+      flex-shrink: 0;
+    }
+    .user-name { font-size: 14px; font-weight: 600; }
+    .user-time { font-size: 11px; color: var(--dim); }
+    .user-videos-badge {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(99,102,241,0.15);
+      color: var(--accent);
+      border-radius: 12px;
+    }
+    .user-kick {
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: inherit;
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .no-users {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--dim);
+      font-size: 13px;
+    }
+
+    /* Videos Panel */
+    .videos-panel {
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .video-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .video-card:hover { border-color: var(--accent); }
+    .video-card video {
+      width: 100%;
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      background: #000;
+      cursor: pointer;
+    }
+    .video-card .vc-info {
+      padding: 12px 14px;
+    }
+    .video-card .vc-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .video-card .vc-user-avatar {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; color: white;
+    }
+    .video-card .vc-user-name { font-size: 12px; font-weight: 700; }
+    .video-card .vc-time { font-size: 10px; color: var(--dim); margin-left: auto; }
+    .video-card .vc-prompt {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .video-card .vc-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .vc-btn {
+      flex: 1;
+      padding: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .vc-btn.play {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: white;
+    }
+    .vc-btn.download {
+      background: rgba(34,197,94,0.12);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+    .no-videos {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--dim);
+    }
+    .no-videos .nv-emoji { font-size: 48px; margin-bottom: 12px; }
+
+    /* Fullscreen Player */
+    .player-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(16px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-overlay.active { display: flex; }
+    .player-close {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .player-video {
+      max-width: 400px;
+      max-height: 80vh;
+      border-radius: 16px;
+      background: #000;
+    }
+    .player-info {
+      margin-top: 16px;
+      text-align: center;
+    }
+    .player-info .pi-user { font-size: 16px; font-weight: 700; }
+    .player-info .pi-prompt {
+      font-size: 13px;
+      color: var(--dim);
+      max-width: 400px;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+    .player-nav {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .player-nav button {
+      padding: 10px 24px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .player-nav button:hover { background: rgba(255,255,255,0.2); }
+
+    /* Live pulse */
+    .live-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: livePulse 1.5s ease infinite;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .admin-main { grid-template-columns: 1fr; }
+      .users-panel { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+      .stats-bar { flex-wrap: wrap; }
+      .stat-card { min-width: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="admin-logo">
+      <h1>Vibe Theory</h1>
+      <span class="badge">Admin</span>
+      <div class="live-dot"></div>
+    </div>
+    <div class="header-actions">
+      <button class="hdr-btn primary" onclick="refreshData()">🔄 Refresh</button>
+      <button class="hdr-btn danger" onclick="disconnectAll()">🚫 Disconnect All</button>
+      <button class="hdr-btn reset" onclick="resetAll()">💣 Reset Everything</button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Connected Users</div>
+      <div class="stat-value green" id="statUsers">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Videos Generated</div>
+      <div class="stat-value amber" id="statVideos">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Updated</div>
+      <div class="stat-value accent" id="statTime" style="font-size:16px;">—</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="admin-main">
+    <!-- Users -->
+    <div class="users-panel">
+      <div class="panel-header">👥 Connected Users</div>
+      <div id="usersList"></div>
+    </div>
+
+    <!-- Videos -->
+    <div class="videos-panel">
+      <div id="videosGrid" class="videos-grid"></div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Player -->
+  <div class="player-overlay" id="playerOverlay">
+    <button class="player-close" onclick="closePlayer()">✕</button>
+    <video class="player-video" id="playerVideo" controls autoplay loop playsinline></video>
+    <div class="player-info">
+      <div class="pi-user" id="playerUser"></div>
+      <div class="pi-prompt" id="playerPrompt"></div>
+    </div>
+    <div class="player-nav">
+      <button onclick="navVideo(-1)">← Previous</button>
+      <button onclick="navVideo(1)">Next →</button>
+    </div>
+  </div>
+
+<script>
+  const STATE_API = '/api/state';
+  let allVideos = [];
+  let allUsers = {};
+  let currentVideoIdx = -1;
+
+  // --- Fetch Data ---
+  async function refreshData() {
+    try {
+      const res = await fetch(`${STATE_API}?t=${Date.now()}`);
+      const data = await res.json();
+
+      allUsers = data.users || {};
+      allVideos = data.videos || [];
+
+      document.getElementById('statUsers').textContent = Object.keys(allUsers).length;
+      document.getElementById('statVideos').textContent = allVideos.length;
+      document.getElementById('statTime').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      renderUsers();
+      renderVideos();
+    } catch (e) {
+      console.error('Failed to fetch state:', e);
+    }
+  }
+
+  // --- Render Users ---
+  function renderUsers() {
+    const el = document.getElementById('usersList');
+    const users = Object.values(allUsers);
+    if (users.length === 0) {
+      el.innerHTML = '<div class="no-users">No users connected</div>';
+      return;
+    }
+    el.innerHTML = users.map(u => {
+      const initial = (u.name || '?')[0].toUpperCase();
+      const joined = u.joinedAt ? new Date(u.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const vCount = u.videoCount || 0;
+      return `
+        <div class="user-card">
+          <div class="user-info">
+            <div class="user-avatar">${initial}</div>
+            <div>
+              <div class="user-name">${escapeHtml(u.name)}</div>
+              <div class="user-time">Joined ${joined}</div>
+            </div>
+          </div>
+          <span class="user-videos-badge">🎬 ${vCount}</span>
+          <button class="user-kick" onclick="kickUser('${escapeHtml(u.name)}')">Kick</button>
+        </div>`;
+    }).join('');
+  }
+
+  // --- Render Videos ---
+  function renderVideos() {
+    const el = document.getElementById('videosGrid');
+    if (allVideos.length === 0) {
+      el.innerHTML = '<div class="no-videos"><div class="nv-emoji">🎬</div>No videos generated yet</div>';
+      return;
+    }
+    el.innerHTML = allVideos.map((v, idx) => {
+      const initial = (v.user || '?')[0].toUpperCase();
+      const prompt = v.prompt || 'No prompt';
+      const hasVideo = v.uri;
+      return `
+        <div class="video-card">
+          ${hasVideo
+            ? `<video src="/api/video-proxy?url=${encodeURIComponent(v.uri)}" preload="metadata" playsinline muted onclick="openPlayer(${idx})"></video>`
+            : `<div style="aspect-ratio:9/16;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;">Storyboard only</div>`
+          }
+          <div class="vc-info">
+            <div class="vc-user">
+              <div class="vc-user-avatar">${initial}</div>
+              <span class="vc-user-name">${escapeHtml(v.user)}</span>
+              <span class="vc-time">${v.date || ''}</span>
+            </div>
+            <div class="vc-prompt">${escapeHtml(prompt)}</div>
+            <div class="vc-actions">
+              ${hasVideo ? `<button class="vc-btn play" onclick="openPlayer(${idx})">▶ Play</button>` : ''}
+              ${hasVideo ? `<button class="vc-btn download" onclick="downloadVideo(${idx})">📥 Download</button>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // --- Player ---
+  function openPlayer(idx) {
+    const v = allVideos[idx];
+    if (!v || !v.uri) return;
+    currentVideoIdx = idx;
+    const player = document.getElementById('playerVideo');
+    player.src = `/api/video-proxy?url=${encodeURIComponent(v.uri)}`;
+    document.getElementById('playerUser').textContent = v.user;
+    document.getElementById('playerPrompt').textContent = v.prompt || '';
+    document.getElementById('playerOverlay').classList.add('active');
+  }
+
+  function closePlayer() {
+    document.getElementById('playerOverlay').classList.remove('active');
+    document.getElementById('playerVideo').pause();
+    document.getElementById('playerVideo').src = '';
+    currentVideoIdx = -1;
+  }
+
+  function navVideo(dir) {
+    const videoEntries = allVideos.filter(v => v.uri);
+    if (videoEntries.length === 0) return;
+    let current = videoEntries.findIndex(v => v === allVideos[currentVideoIdx]);
+    current = (current + dir + videoEntries.length) % videoEntries.length;
+    const realIdx = allVideos.indexOf(videoEntries[current]);
+    openPlayer(realIdx);
+  }
+
+  // --- Download ---
+  async function downloadVideo(idx) {
+    const v = allVideos[idx];
+    if (!v || !v.uri) return;
+    try {
+      const res = await fetch(`/api/video-proxy?url=${encodeURIComponent(v.uri)}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vibetheory_${v.user}_${v.id || Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Download failed: ' + e.message);
+    }
+  }
+
+  // --- Admin Actions ---
+  async function disconnectAll() {
+    if (!confirm('Disconnect ALL users? They will be kicked from the app.')) return;
+    try {
+      await fetch(`${STATE_API}?action=logout_all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      refreshData();
+    } catch (e) { alert('Failed: ' + e.message); }
+  }
+
+  async function resetAll() {
+    if (!confirm('⚠️ This will remove ALL users AND all videos. Are you sure?')) return;
+    if (!confirm('Double confirm — this cannot be undone!')) return;
+    try {
+      await fetch(`${STATE_API}?action=reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      refreshData();
+    } catch (e) { alert('Failed: ' + e.message); }
+  }
+
+  async function kickUser(name) {
+    try {
+      await fetch(`${STATE_API}?action=logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      refreshData();
+    } catch (e) { alert('Failed: ' + e.message); }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+  }
+
+  // --- Auto-refresh ---
+  refreshData();
+  setInterval(refreshData, 8000);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePlayer();
+    if (e.key === 'ArrowLeft') navVideo(-1);
+    if (e.key === 'ArrowRight') navVideo(1);
+  });
+</script>
+</body>
+</html>
