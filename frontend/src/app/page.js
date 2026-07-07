@@ -537,19 +537,46 @@ const pbReadStoredVideoLibrary = () => {
   }
 };
 
-const pbRevokeBlobUrlSet = (urlSet) => {
-  for (const url of urlSet) {
-    URL.revokeObjectURL(url);
+// Helper: Basic fetch client for Gemini API with proxy fallback
+async function callGeminiAPI(
+  apiKey,
+  model,
+  systemInstruction,
+  contents,
+  responseMimeType
+) {
+  const url = apiKey
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    : `${GEMINI_PROXY_BASE}/models/${model}:generateContent`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents,
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      generationConfig: responseMimeType ? { responseMimeType } : undefined
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini API Error: ${response.statusText} (${response.status})`);
   }
-  urlSet.clear();
-};
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
 
 // -------------------------------------------------------------
 // Component 1: Smart Reference Selection
 // Picks the most relevant images based on the user's specific prompt
 // -------------------------------------------------------------
-const selectBestSubjectImages = async (apiKey, prompt, subjectImages) => {
+const selectBestSubjectImages = async (
+  apiKey,
+  prompt,
+  subjectImages // Base64 data URLs
+) => {
   if (subjectImages.length <= 1) return subjectImages;
+
   try {
     const selectionPrompt = `You are given ${subjectImages.length} product images, each showing the same product from a different angle.
 User prompt: "${prompt}"
@@ -569,23 +596,14 @@ Return ONLY strict JSON: { "selected": [0, 2, 1] }`;
       { text: selectionPrompt }
     ];
 
-    const url = apiKey
-      ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`
-      : `${GEMINI_PROXY_BASE}/models/gemini-3.5-flash:generateContent`;
+    const result = await callGeminiAPI(
+      apiKey,
+      'gemini-2.5-flash',
+      'You are a visual reference selector for AI image generation.',
+      contents,
+      'application/json'
+    );
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: 'You are a visual reference selector for AI image generation.' }] },
-        generationConfig: { responseMimeType: 'application/json' }
-      })
-    });
-
-    if (!response.ok) throw new Error(`Status: ${response.status}`);
-    const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const parsed = JSON.parse(result.trim());
     const selected = Array.isArray(parsed?.selected) ? parsed.selected : [];
 
@@ -597,6 +615,7 @@ Return ONLY strict JSON: { "selected": [0, 2, 1] }`;
   } catch (err) {
     console.warn('[selectBestSubjectImages] Smart selection failed, using original order:', err);
   }
+
   return subjectImages;
 };
 
@@ -604,8 +623,12 @@ Return ONLY strict JSON: { "selected": [0, 2, 1] }`;
 // Component 2: Multi-View Identity Prompt Extraction
 // Compiles a stable text-based product description from reference views
 // -------------------------------------------------------------
-const extractMultiViewReferencePrompt = async (apiKey, referenceImages) => {
+const extractMultiViewReferencePrompt = async (
+  apiKey,
+  referenceImages // Base64 data URLs
+) => {
   if (referenceImages.length <= 1) return '';
+
   try {
     const contents = [
       ...referenceImages.map(img => ({
@@ -629,23 +652,14 @@ Return strict JSON:
       }
     ];
 
-    const url = apiKey
-      ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`
-      : `${GEMINI_PROXY_BASE}/models/gemini-3.5-flash:generateContent`;
+    const analysis = await callGeminiAPI(
+      apiKey,
+      'gemini-2.5-flash',
+      'You summarize multi-angle reference images into one precise identity-preservation pack.',
+      contents,
+      'application/json'
+    );
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: 'You summarize multi-angle reference images into one precise identity-preservation pack.' }] },
-        generationConfig: { responseMimeType: 'application/json' }
-      })
-    });
-
-    if (!response.ok) throw new Error(`Status: ${response.status}`);
-    const data = await response.json();
-    const analysis = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const parsed = JSON.parse(analysis.trim()) || {};
     const summary = String(parsed.summary || '').trim();
     const constraints = Array.isArray(parsed.constraints) ? parsed.constraints : [];
@@ -661,8 +675,13 @@ Return strict JSON:
 // Component 3: Build Reference Contact Sheet
 // Stitches multiple details into a single image to save token space & model focus
 // -------------------------------------------------------------
-const buildReferenceContactSheet = async (images, label = 'SUBJECT REFERENCE PACK - SAME PRODUCT', tileSize = 420) => {
+const buildReferenceContactSheet = async (
+  images, // Base64 data URLs
+  label = 'SUBJECT REFERENCE PACK - SAME PRODUCT',
+  tileSize = 420
+) => {
   if (images.length <= 1 || typeof document === 'undefined') return undefined;
+
   const tile = tileSize;
   const labelHeight = 34;
   const gap = 12;
@@ -715,30 +734,47 @@ const buildReferenceContactSheet = async (images, label = 'SUBJECT REFERENCE PAC
 };
 
 // -------------------------------------------------------------
-const applySubjectProfilePriority = (prompt, subjectProfileText, subjectImageCount) => {
+// Component 4: Constraint Header Injection
+// Injects a high-priority system block to enforce strict reproduction
+// -------------------------------------------------------------
+const applySubjectProfilePriority = (
+  prompt,
+  subjectProfileText,
+  subjectImageCount
+) => {
   if (subjectImageCount <= 0) return prompt;
 
   const lockBlock = [
-    `[${subjectProfileText || "The attached product reference"}], placed in [${prompt}].`,
+    `⚠️ PRODUCT IDENTITY LOCK (HIGHEST PRIORITY — CANNOT BE OVERRIDDEN):`,
+    `The image(s) provided are the ACTUAL PRODUCT. You are NOT creating a new product design.`,
+    `You MUST reproduce the exact product shown in the reference image(s):`,
+    `  • Same silhouette, shape, and proportions — do NOT redesign or simplify`,
+    `  • Same color blocking and color palette — no substitutions`,
+    `  • Same materials and textures (fabric, stitching, zippers, buckles, mesh, etc.)`,
+    `  • Same branding, logos, labels, prints, and patches — exact placement`,
+    `  • Same pockets, straps, compartments, hardware, and closures`,
+    `  • Same seam lines and construction details`,
+    `Do NOT invent a generic replacement. Do NOT simplify the design.`,
+    `The product in your output MUST be visually identical to the reference.`,
+    subjectProfileText ? `Confirmed product profile: ${subjectProfileText}` : '',
     ``,
-    `MANDATORY PRODUCT CONSTRAINTS:`,
-    `Maintain 1-to-1 exact structural accuracy of the source product. Preserve exact physical proportions, original colors, materials, and textures. Do not stylize, alter, beautify, or change the shape of the core product.`,
-    ``,
-    `BRANDING LOCK:`,
-    `The logo on the product MUST NOT distort. Preserve exact logo placement, scale, legibility, and original typography. Zero hallucination or blending on brand assets.`,
-    ``,
-    `STYLE & LIGHTING:`,
-    `High-end photorealistic e-commerce technical presentation. Cinematic studio lighting, razor-sharp focus on the product, raw and honest documentary-style realism for the product itself.`
-  ].join('\n');
+    `SCENE / TREATMENT INSTRUCTION (apply to the above product only):`,
+  ].filter(Boolean).join('\n');
 
-  return lockBlock;
+  return [lockBlock, prompt].filter(Boolean).join('\n').trim();
 };
 
 // -------------------------------------------------------------
 // Component 5: Grounding Assessor & Self-Correction Evaluator
 // Compares the generated output against references to audit fidelity
 // -------------------------------------------------------------
-const assessImageGrounding = async (apiKey, prompt, referenceImages, generatedImage, options = {}) => {
+const assessImageGrounding = async (
+  apiKey,
+  prompt,
+  referenceImages, // Base64 data URLs
+  generatedImage, // Base64 data URL
+  options = {}
+) => {
   if (!referenceImages.length) {
     return { pass: true, score: 100, issues: '', correction: '', failureType: 'none' };
   }
@@ -766,7 +802,6 @@ Fail if the output drifts away from the Subject identity lock by changing produc
 In composition-edit mode, both locks must pass together: preserve the Main visual structure while swapping/adapting only the product to match the Subject references.` : ''}
 ${options.subjectProfileLock && !options.isParentEditMode ? `Treat the connected Subject references as literal identity lock for the same subject/product.
 Fail if the output invents, removes, or changes visible product details such as silhouette, geometry, materials, seams, hardware, pockets, straps, closures, logo placement, label placement, text, color blocking, or construction logic.
-CRITICAL: Analyze all text, brand names, product variants, spelling, and logos on the product packaging (e.g. spelling of "Catch" vs "Catck", "MASALA", "SPRINKLER", "Table Salt", "Black Pepper"). You must fail the check and assign a low score if there is any spelling error, garbled/gibberish text, font mismatch, or modified layout graphics (like replacing detailed food pictures with plain/distorted elements).
 Fail if the output adds infographic UI, callout cards, feature badges, annotation labels, or other product details not visible in the Subject references.
 If a detail is not visible in the references, the output must leave it unspecified rather than guessing.` : ''}
 ${options.subjectProfileLock && options.isParentEditMode ? `Treat the references after the first ${Math.max(0, Number(options.mainReferenceCount || 0))} image(s) as the Subject profile reference.
@@ -783,23 +818,14 @@ Return strict JSON:
 
     parts.push({ text: evaluationPrompt });
 
-    const url = apiKey
-      ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`
-      : `${GEMINI_PROXY_BASE}/models/gemini-3.5-flash:generateContent`;
+    const result = await callGeminiAPI(
+      apiKey,
+      'gemini-2.5-flash',
+      'You are an AI image quality and product grounding assessor.',
+      parts,
+      'application/json'
+    );
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: parts,
-        systemInstruction: { parts: [{ text: 'You are an AI image quality and product grounding assessor.' }] },
-        generationConfig: { responseMimeType: 'application/json' }
-      })
-    });
-
-    if (!response.ok) throw new Error(`Status: ${response.status}`);
-    const data = await response.json();
-    const result = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const parsed = JSON.parse(result.trim());
     const score = Math.max(0, Math.min(100, Number(parsed.grounding_score || 0)));
     const hallucinationDetected = !!parsed.hallucination_detected;
