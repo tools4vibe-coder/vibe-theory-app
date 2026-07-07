@@ -1540,10 +1540,21 @@ CLIP2: [prompt text]`
 
     } catch (e) {
       chatHistory = chatHistory.filter(m => m !== progressMsg);
-      chatHistory.push({ role: 'model', text: `⚠️ Video generation failed: ${e.message}` });
+      let humanMsg = e.message || "Unknown error";
+      const isSafety = humanMsg.toLowerCase().includes("blocked") || 
+                       humanMsg.toLowerCase().includes("safety") || 
+                       humanMsg.toLowerCase().includes("guideline") || 
+                       humanMsg.toLowerCase().includes("policy") || 
+                       humanMsg.toLowerCase().includes("credential");
+      if (isSafety) {
+        humanMsg = "The generation request was blocked by the safety filters. This usually happens if the prompt contains brand names, copyrighted characters (like Marvel or Disney), or sensitive words. Please adjust your prompt to use generic descriptions (e.g. \"flying hero\" instead of \"Superman\") and try again!";
+      } else {
+        humanMsg = `We encountered a temporary connection issue generating the video clips (${e.message}). Please try clicking the button again to retry!`;
+      }
+      chatHistory.push({ role: 'model', text: `⚠️ Video generation failed: ${humanMsg}` });
     }
 
-    lastStoryboardData = null;
+    // Do NOT set lastStoryboardData to null so the user does not lose their storyboard progress and can retry
     renderChatArea();
   }
 
